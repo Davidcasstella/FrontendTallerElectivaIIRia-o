@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Restaurante</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .orders-body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .orders-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .controls-section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .search-input, .filter-select {
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .search-input:focus, .filter-select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .order-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: grid;
+            grid-template-columns: auto 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .order-id {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .order-customer {
+            color: #666;
+        }
+
+        .order-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 100px;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-preparing { background: #d1ecf1; color: #0c5460; }
+        .status-ready { background: #d4edda; color: #155724; }
+        .status-delivered { background: #e2e3e5; color: #383d41; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        .order-total {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .order-content {
+            padding: 20px;
+        }
+
+        .order-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .order-items {
+            margin-top: 15px;
+        }
+
+        .order-items h4 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .item-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .order-item:last-child {
+            border-bottom: none;
+        }
+
+        .item-name {
+            font-weight: 500;
+        }
+
+        .item-details {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .item-price {
+            font-weight: 500;
+            color: #667eea;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .order-header {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                text-align: center;
+            }
+
+            .order-info {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .header-stats {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body class="orders-body">
+    <div class="orders-header">
+        <div class="header-content">
+            <h1 class="header-title">Gestión de Pedidos</h1>
+            <div class="header-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalOrders">0</span>
+                    <span>Total</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="pendingOrders">0</span>
+                    <span>Pendientes</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number" id="todayRevenue">$0</span>
+                    <span>Hoy</span>
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-small" data-action="go-back">← Volver</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <!-- Controles de búsqueda y filtros -->
+        <div class="controls-section">
+            <div class="controls-grid">
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar por cliente o ID...">
+                
+                <select class="filter-select" id="statusFilter">
+                    <option value="">Todos los estados</option>
+                    <option value="pending">Pendiente</option>
+                    <option value="preparing">Preparando</option>
+                    <option value="ready">Listo</option>
+                    <option value="delivered">Entregado</option>
+                    <option value="cancelled">Cancelado</option>
+                </select>
+
+                <select class="filter-select" id="dateFilter">
+                    <option value="">Todas las fechas</option>
+                    <option value="today">Hoy</option>
+                    <option value="week">Esta semana</option>
+                    <option value="month">Este mes</option>
+                </select>
+
+                <button class="btn btn-primary btn-small" id="refreshBtn">🔄 Actualizar</button>
+            </div>
+        </div>
+
+        <!-- Lista de pedidos -->
+        <div id="ordersContainer">
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Cargando pedidos...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let orders = [];
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const currentUser = appUtils.getCurrentUser();
+            if (!currentUser) {
+                window.location.href = '/login';
+                return;
+            }
+
+            await loadOrders();
+            setupEventListeners();
+            setupRoleBasedAccess();
+        });
+
+        // Configurar acceso basado en roles
+        function setupRoleBasedAccess() {
+            const currentUser = appUtils.getCurrentUser();
+            const headerTitle = document.querySelector('.header-title');
+            
+            switch(currentUser.role) {
+                case 'customer':
+                    headerTitle.textContent = 'Mis Pedidos';
+                    break;
+                case 'chef':
+                    headerTitle.textContent = 'Pedidos de Cocina';
+                    break;
+                case 'admin':
+                    headerTitle.textContent = 'Gestión de Pedidos';
+                    break;
+            }
+        }
+
+        // Cargar pedidos (simulados)
+        async function loadOrders() {
+            try {
+                const searchTerm = document.getElementById('searchInput').value;
+                const status = document.getElementById('statusFilter').value;
+                const dateRange = document.getElementById('dateFilter').value;
+
+                // Datos simulados para demostración
+                const allOrders = generateMockOrders();
+                
+                // Aplicar filtros
+                let filteredOrders = allOrders;
+                
+                if (searchTerm) {
+                    filteredOrders = filteredOrders.filter(order => 
+                        order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        order._id.includes(searchTerm.toLowerCase())
+                    );
+                }
+                
+                if (status) {
+                    filteredOrders = filteredOrders.filter(order => order.status === status);
+                }
+                
+                if (dateRange) {
+                    const now = new Date();
+                    filteredOrders = filteredOrders.filter(order => {
+                        const orderDate = new Date(order.createdAt);
+                        switch(dateRange) {
+                            case 'today':
+                                return orderDate.toDateString() === now.toDateString();
+                            case 'week':
+                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                                return orderDate >= weekAgo;
+                            case 'month':
+                                const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                                return orderDate >= monthAgo;
+                            default:
+                                return true;
+                        }
+                    });
+                }
+
+                // Filtrar por rol
+                const currentUser = appUtils.getCurrentUser();
+                if (currentUser.role === 'customer') {
+                    filteredOrders = filteredOrders.filter(order => order.user.id === currentUser._id);
+                } else if (currentUser.role === 'chef') {
+                    filteredOrders = filteredOrders.filter(order => 
+                        ['pending', 'preparing'].includes(order.status)
+                    );
+                }
+
+                orders = filteredOrders;
+                renderOrders();
+                updateStats();
+                
+            } catch (error) {
+                console.error('Error cargando pedidos:', error);
+                showError('Error al cargar pedidos: ' + error.message);
+            }
+        }
+
+        // Generar pedidos simulados
+        function generateMockOrders() {
+            const currentUser = appUtils.getCurrentUser();
+            const statuses = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
+            const orderTypes = ['delivery', 'pickup'];
+            
+            const mockProducts = [
+                { _id: '1', name: 'Hamburguesa Clásica', price: 15000 },
+                { _id: '2', name: 'Pizza Margherita', price: 20000 },
+                { _id: '3', name: 'Ensalada César', price: 12000 },
+                { _id: '4', name: 'Pasta Carbonara', price: 18000 },
+                { _id: '5', name: 'Pollo a la Parrilla', price: 22000 }
+            ];
+
+            const mockUsers = [
+                { _id: currentUser._id, name: currentUser.name, id: currentUser._id },
+                { _id: '2', name: 'María García', id: '2' },
+                { _id: '3', name: 'Carlos López', id: '3' },
+                { _id: '4', name: 'Ana Rodríguez', id: '4' },
+                { _id: '5', name: 'Luis Martínez', id: '5' }
+            ];
+
+            const orders = [];
+            
+            for (let i = 1; i <= 15; i++) {
+                const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
+                const itemsCount = Math.floor(Math.random() * 3) + 1;
+                const items = [];
+                let total = 0;
+
+                for (let j = 0; j < itemsCount; j++) {
+                    const product = mockProducts[Math.floor(Math.random() * mockProducts.length)];
+                    const quantity = Math.floor(Math.random() * 3) + 1;
+                    items.push({
+                        product: product,
+                        quantity: quantity,
+                        price: product.price
+                    });
+                    total += product.price * quantity;
+                }
+
+                const daysAgo = Math.floor(Math.random() * 7);
+                const hoursAgo = Math.floor(Math.random() * 24);
+                const createdAt = new Date();
+                createdAt.setDate(createdAt.getDate() - daysAgo);
+                createdAt.setHours(createdAt.getHours() - hoursAgo);
+
+                orders.push({
+                    _id: `order_${i.toString().padStart(3, '0')}`,
+                    user: randomUser,
+                    status: statuses[Math.floor(Math.random() * statuses.length)],
+                    orderType: orderTypes[Math.floor(Math.random() * orderTypes.length)],
+                    items: items,
+                    total: total,
+                    deliveryAddress: Math.random() > 0.5 ? `Calle ${i} #${10 + i}-${20 + i}` : null,
+                    createdAt: createdAt.toISOString(),
+                    updatedAt: createdAt.toISOString()
+                });
+            }
+
+            return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        // Renderizar pedidos
+        function renderOrders() {
+            const container = document.getElementById('ordersContainer');
+            
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No se encontraron pedidos</h3>
+                        <p>${getEmptyMessage()}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const list = document.createElement('div');
+            list.className = 'orders-list';
+
+            orders.forEach(order => {
+                const card = createOrderCard(order);
+                list.appendChild(card);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(list);
+        }
+
+        // Crear tarjeta de pedido
+        function createOrderCard(order) {
+            const div = document.createElement('div');
+            div.className = 'order-card';
+            
+            const customerName = order.user?.name || 'Cliente desconocido';
+            const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
+            const orderTime = new Date(order.createdAt).toLocaleTimeString('es-ES', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            div.innerHTML = `
+                <div class="order-header">
+                    <div class="order-id">#${order._id.slice(-6).toUpperCase()}</div>
+                    <div class="order-customer">${customerName}</div>
+                    <div class="order-status status-${order.status}">${getStatusText(order.status)}</div>
+                    <div class="order-total">$${order.total.toLocaleString()}</div>
+                </div>
+                
+                <div class="order-content">
+                    <div class="order-info">
+                        <div class="info-item">
+                            <span class="info-label">Fecha</span>
+                            <span class="info-value">${orderDate}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Hora</span>
+                            <span class="info-value">${orderTime}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Tipo</span>
+                            <span class="info-value">${order.orderType === 'delivery' ? 'Domicilio' : 'Recoger'}</span>
+                        </div>
+                    </div>
+
+                    ${order.deliveryAddress ? `
+                        <div class="order-info">
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <span class="info-label">Dirección de entrega</span>
+                                <span class="info-value">${order.deliveryAddress}</span>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="order-items">
+                        <h4>Productos (${order.items?.length || 0})</h4>
+                        <div class="item-list">
+                            ${(order.items || []).map(item => `
+                                <div class="order-item">
+                                    <div>
+                                        <div class="item-name">${item.product?.name || 'Producto desconocido'}</div>
+                                        <div class="item-details">Cantidad: ${item.quantity}</div>
+                                    </div>
+                                    <div class="item-price">$${(item.price * item.quantity).toLocaleString()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="order-actions">
+                        <button class="btn btn-secondary btn-small" data-action="view-order" data-id="${order._id}">
+                            Ver Detalle
+                        </button>
+                        ${getActionButtons(order)}
+                    </div>
+                </div>
+            `;
+            
+            return div;
+        }
+
+        // Obtener botones de acción según el rol y estado
+        function getActionButtons(order) {
+            const currentUser = appUtils.getCurrentUser();
+            const buttons = [];
+            
+            if (currentUser.role === 'chef' && order.status === 'pending') {
+                buttons.push(`
+                    <button class="btn btn-primary btn-small" data-action="start-preparing" data-id="${order._id}">
+                        Iniciar Preparación
+                    </button>
+                `);
+            }
+            
+            if (currentUser.role === 'chef' && order.status === 'preparing') {
+                buttons.push(`
+                    <button class="btn btn-primary btn-small" data-action="mark-ready" data-id="${order._id}">
+                        Marcar Listo
+                    </button>
+                `);
+            }
+            
+            if (currentUser.role === 'admin') {
+                if (order.status !== 'delivered' && order.status !== 'cancelled') {
+                    buttons.push(`
+                        <button class="btn btn-primary btn-small" data-action="update-status" data-id="${order._id}">
+                            Cambiar Estado
+                        </button>
+                    `);
+                }
+                
+                if (order.status === 'pending') {
+                    buttons.push(`
+                        <button class="btn btn-secondary btn-small" data-action="cancel-order" data-id="${order._id}">
+                            Cancelar
+                        </button>
+                    `);
+                }
+            }
+            
+            return buttons.join('');
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            document.getElementById('searchInput').addEventListener('input', debounce(loadOrders, 500));
+            document.getElementById('statusFilter').addEventListener('change', loadOrders);
+            document.getElementById('dateFilter').addEventListener('change', loadOrders);
+            document.getElementById('refreshBtn').addEventListener('click', loadOrders);
+            
+            document.addEventListener('click', function(e) {
+                const action = e.target.getAttribute('data-action');
+                const orderId = e.target.getAttribute('data-id');
+                
+                if (action && orderId) {
+                    handleOrderAction(action, orderId);
+                } else if (action === 'go-back') {
+                    goBack();
+                }
+            });
+        }
+
+        // Manejar acciones de pedidos (simulado)
+        async function handleOrderAction(action, orderId) {
+            const order = orders.find(o => o._id === orderId);
+            if (!order) return;
+
+            try {
+                switch(action) {
+                    case 'view-order':
+                        viewOrderDetail(order);
+                        break;
+                        
+                    case 'start-preparing':
+                        // Simular cambio de estado
+                        order.status = 'preparing';
+                        appUtils.showAlert('ordersContainer', 'Pedido marcado como en preparación', 'success');
+                        renderOrders();
+                        updateStats();
+                        break;
+                        
+                    case 'mark-ready':
+                        // Simular cambio de estado
+                        order.status = 'ready';
+                        appUtils.showAlert('ordersContainer', 'Pedido marcado como listo', 'success');
+                        renderOrders();
+                        updateStats();
+                        break;
+                        
+                    case 'update-status':
+                        updateOrderStatus(orderId);
+                        break;
+                        
+                    case 'cancel-order':
+                        if (confirm('¿Estás seguro de cancelar este pedido?')) {
+                            order.status = 'cancelled';
+                            appUtils.showAlert('ordersContainer', 'Pedido cancelado', 'success');
+                            renderOrders();
+                            updateStats();
+                        }
+                        break;
+                }
+            } catch (error) {
+                appUtils.showAlert('ordersContainer', 'Error: ' + error.message, 'error');
+            }
+        }
+
+        // Ver detalle del pedido
+        function viewOrderDetail(order) {
+            const customerName = order.user?.name || 'Cliente desconocido';
+            const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
+            const items = (order.items || []).map(item => 
+                `• ${item.product?.name || 'Producto'} x${item.quantity} - $${(item.price * item.quantity).toLocaleString()}`
+            ).join('\n');
+
+            alert(`
+DETALLE DEL PEDIDO #${order._id.slice(-6).toUpperCase()}
+
+Cliente: ${customerName}
+Fecha: ${orderDate}
+Estado: ${getStatusText(order.status)}
+Tipo: ${order.orderType === 'delivery' ? 'Domicilio' : 'Recoger'}
+${order.deliveryAddress ? `Dirección: ${order.deliveryAddress}` : ''}
+
+PRODUCTOS:
+${items}
+
+TOTAL: $${order.total.toLocaleString()}
+            `.trim());
+        }
+
+        // Actualizar estado del pedido (simulado)
+        function updateOrderStatus(orderId) {
+            const newStatus = prompt(`
+Selecciona el nuevo estado:
+1. pending - Pendiente
+2. preparing - Preparando  
+3. ready - Listo
+4. delivered - Entregado
+5. cancelled - Cancelado
+
+Escribe el número:
+            `.trim());
+
+            const statusMap = {
+                '1': 'pending',
+                '2': 'preparing', 
+                '3': 'ready',
+                '4': 'delivered',
+                '5': 'cancelled'
+            };
+
+            if (statusMap[newStatus]) {
+                const order = orders.find(o => o._id === orderId);
+                if (order) {
+                    order.status = statusMap[newStatus];
+                    appUtils.showAlert('ordersContainer', 'Estado actualizado', 'success');
+                    renderOrders();
+                    updateStats();
+                }
+            }
+        }
+
+        // Actualizar estadísticas
+        function updateStats() {
+            const total = orders.length;
+            const pending = orders.filter(o => o.status === 'pending').length;
+            const today = orders
+                .filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString())
+                .reduce((sum, o) => sum + o.total, 0);
+
+            document.getElementById('totalOrders').textContent = total;
+            document.getElementById('pendingOrders').textContent = pending;
+            document.getElementById('todayRevenue').textContent = `$${today.toLocaleString()}`;
+        }
+
+        // Funciones de utilidad
+        function getStatusText(status) {
+            const statusTexts = {
+                pending: 'Pendiente',
+                preparing: 'Preparando',
+                ready: 'Listo',
+                delivered: 'Entregado',
+                cancelled: 'Cancelado'
+            };
+            return statusTexts[status] || status;
+        }
+
+        function getEmptyMessage() {
+            const currentUser = appUtils.getCurrentUser();
+            switch(currentUser.role) {
+                case 'customer':
+                    return 'No has realizado ningún pedido aún.';
+                case 'chef':
+                    return 'No hay pedidos pendientes en cocina.';
+                default:
+                    return 'No hay pedidos que coincidan con los filtros seleccionados.';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('ordersContainer').innerHTML = `
+                <div class="empty-state">
+                    <h3>Error</h3>
+                    <p>${message}</p>
+                    <button class="btn btn-primary" onclick="loadOrders()">Reintentar</button>
+                </div>
+            `;
+        }
+
+        function goBack() {
+            window.location.href = '/dashboard';
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>

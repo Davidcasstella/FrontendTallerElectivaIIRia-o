@@ -108,6 +108,13 @@
             justify-content: center;
             font-size: 3rem;
             color: white;
+            position: relative;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .product-content {
@@ -356,11 +363,16 @@
             const div = document.createElement('div');
             div.className = 'product-card';
             
-            const category = categories.find(c => c._id === product.category._id) || product.category;
+            // Obtener categoría
+            const category = categories.find(c => c._id === (product.category?._id || product.category)) || 
+                           { name: 'Sin categoría' };
             
             div.innerHTML = `
                 <div class="product-image">
-                    ${product.image ? `<img src="${product.image}" alt="${product.name}" style="width:100%;height:100%;object-fit:cover;">` : '🍽️'}
+                    ${product.image ? 
+                        `<img src="${product.image}" alt="${product.name}">` : 
+                        '<div style="font-size: 4rem;">🍽️</div>'
+                    }
                 </div>
                 <div class="product-content">
                     <h3 class="product-name">${product.name}</h3>
@@ -368,8 +380,8 @@
                     <div class="product-price">$${product.price.toLocaleString()}</div>
                     
                     <div class="product-meta">
-                        <span class="product-category">${category.name || 'Sin categoría'}</span>
-                        <span class="product-time">⏱️ ${product.preparationTime} min</span>
+                        <span class="product-category">${category.name}</span>
+                        <span class="product-time">⏱️ ${product.preparationTime || 0} min</span>
                     </div>
                     
                     <div class="product-badges">
@@ -463,19 +475,27 @@
 
         // Funciones de acción
         function addNewProduct() {
-            // Por ahora mostrar alerta, después haremos la vista de formulario
-            appUtils.showAlert('productsContainer', 'Funcionalidad próximamente', 'warning');
+            // Próximamente implementaremos el formulario
+            window.location.href = '/products/new';
         }
 
         function viewProduct(id) {
             const product = products.find(p => p._id === id);
             if (product) {
-                alert(`Producto: ${product.name}\nPrecio: $${product.price}\nDescripción: ${product.description || 'Sin descripción'}`);
+                const category = categories.find(c => c._id === (product.category?._id || product.category))?.name || 'Sin categoría';
+                alert(`
+PRODUCTO: ${product.name}
+Precio: $${product.price.toLocaleString()}
+Categoría: ${category}
+Tiempo: ${product.preparationTime || 0} min
+Descripción: ${product.description || 'Sin descripción'}
+Estado: ${product.isAvailable ? 'Disponible' : 'No disponible'}
+                `.trim());
             }
         }
 
         function editProduct(id) {
-            appUtils.showAlert('productsContainer', 'Edición próximamente', 'warning');
+            window.location.href = `/products/edit/${id}`;
         }
 
         async function deleteProduct(id, name) {
@@ -484,7 +504,7 @@
             }
 
             try {
-                await appUtils.apiRequest(`/products/${id}`, 'DELETE');
+                const response = await appUtils.apiRequest(`/products/${id}`, 'DELETE');
                 appUtils.showAlert('productsContainer', 'Producto eliminado exitosamente', 'success');
                 await loadProducts(); // Recargar lista
             } catch (error) {

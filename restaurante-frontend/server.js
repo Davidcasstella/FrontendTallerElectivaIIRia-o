@@ -63,6 +63,60 @@ app.get('/products', (req, res) => {
   });
 });
 
+// Nuevas rutas para productos
+app.get('/products/new', (req, res) => {
+  res.render('product-form', { 
+    title: 'Nuevo Producto',
+    mode: 'create',
+    product: null
+  });
+});
+
+app.get('/products/edit/:id', (req, res) => {
+  res.render('product-form', { 
+    title: 'Editar Producto',
+    mode: 'edit',
+    productId: req.params.id
+  });
+});
+
+// Ruta para pedidos (la crearemos después)
+app.get('/orders', (req, res) => {
+  res.render('orders', { 
+    title: 'Pedidos'
+  });
+});
+
+// Ruta para gestión de usuarios (solo admin)
+app.get('/users', (req, res) => {
+  res.render('users', { 
+    title: 'Gestión de Usuarios'
+  });
+});
+
+// Ruta para gestión de categorías
+app.get('/categories', (req, res) => {
+  res.render('categories', { 
+    title: 'Gestión de Categorías'
+  });
+});
+
+// Ruta para formulario de categoría
+app.get('/categories/new', (req, res) => {
+  res.render('category-form', { 
+    title: 'Nueva Categoría',
+    mode: 'create'
+  });
+});
+
+app.get('/categories/edit/:id', (req, res) => {
+  res.render('category-form', { 
+    title: 'Editar Categoría',
+    mode: 'edit',
+    categoryId: req.params.id
+  });
+});
+
 // Manejo de errores 404
 app.use((req, res) => {
   res.status(404).send(`

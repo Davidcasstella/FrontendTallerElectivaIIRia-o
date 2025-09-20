@@ -13,7 +13,7 @@
         }
 
         .dashboard-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #bb0a0a 0%, #024ada 100%);
             color: white;
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -68,25 +68,27 @@
             margin-bottom: 5px;
         }
 
+        /* Nueva organización en 2 columnas principales */
         .actions-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
             margin-bottom: 30px;
         }
 
         .action-section {
             background: white;
-            padding: 25px;
+            padding: 30px;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
 
         .action-section h3 {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             color: #333;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 3px solid #667eea;
             padding-bottom: 10px;
+            font-size: 1.3rem;
         }
 
         .action-buttons {
@@ -98,10 +100,23 @@
         .action-buttons .btn {
             margin: 0;
             text-align: left;
-            padding: 15px 20px;
+            padding: 18px 20px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .action-buttons .btn:hover {
+            transform: translateX(5px);
+        }
+
+        .admin-section {
+            grid-column: 1 / -1;
+            max-width: 400px;
+            margin: 0 auto;
         }
 
         .logout-section {
@@ -118,6 +133,24 @@
             font-size: 0.9rem;
             font-weight: 600;
             margin-left: 10px;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .actions-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -155,11 +188,11 @@
             </div>
         </div>
 
-        <!-- Acciones principales -->
+        <!-- Acciones principales organizadas en 2 columnas -->
         <div class="actions-grid">
-            <!-- Sección de Productos -->
+            <!-- Columna 1: Menú y Productos -->
             <div class="action-section">
-                <h3>Gestión de Productos</h3>
+                <h3>Menú y Productos</h3>
                 <div class="action-buttons">
                     <button class="btn btn-primary" data-action="products">
                         📋 Ver Productos
@@ -173,9 +206,9 @@
                 </div>
             </div>
 
-            <!-- Sección de Pedidos -->
+            <!-- Columna 2: Pedidos y Usuarios -->
             <div class="action-section">
-                <h3>Gestión de Pedidos</h3>
+                <h3>Pedidos y Administración</h3>
                 <div class="action-buttons">
                     <button class="btn btn-primary" data-action="orders">
                         📦 Ver Pedidos
@@ -183,37 +216,8 @@
                     <button class="btn btn-secondary" data-action="new-order">
                         🛒 Nuevo Pedido
                     </button>
-                    <button class="btn btn-secondary" data-action="kitchen">
-                        👨‍🍳 Vista Cocina
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sección de Administración -->
-            <div class="action-section" id="adminSection">
-                <h3>Administración</h3>
-                <div class="action-buttons">
-                    <button class="btn btn-primary" data-action="users">
+                    <button class="btn btn-secondary" data-action="users" id="manageUsersBtn">
                         👥 Gestionar Usuarios
-                    </button>
-                    <button class="btn btn-secondary" data-action="reports">
-                        📊 Reportes
-                    </button>
-                    <button class="btn btn-secondary" data-action="settings">
-                        ⚙️ Configuración
-                    </button>
-                </div>
-            </div>
-
-            <!-- Sección de Usuario -->
-            <div class="action-section">
-                <h3>Mi Cuenta</h3>
-                <div class="action-buttons">
-                    <button class="btn btn-secondary" data-action="profile">
-                        👤 Mi Perfil
-                    </button>
-                    <button class="btn btn-secondary" data-action="change-password">
-                        🔒 Cambiar Contraseña
                     </button>
                 </div>
             </div>
@@ -257,7 +261,7 @@
                     if (canAddProducts()) {
                         goToPage('/products/new');
                     } else {
-                        showAlert('main-content', 'No tienes permisos para agregar productos', 'error');
+                        showAlert('No tienes permisos para agregar productos', 'error');
                     }
                     break;
                 case 'categories':
@@ -269,26 +273,15 @@
                 case 'new-order':
                     goToPage('/orders/new');
                     break;
-                case 'kitchen':
-                    goToPage('/kitchen');
-                    break;
                 case 'users':
-                    goToPage('/users');
-                    break;
-                case 'reports':
-                    goToPage('/reports');
-                    break;
-                case 'settings':
-                    goToPage('/settings');
-                    break;
-                case 'profile':
-                    goToPage('/profile');
-                    break;
-                case 'change-password':
-                    changePassword();
+                    if (canManageUsers()) {
+                        goToPage('/users');
+                    } else {
+                        showAlert('Solo los administradores pueden gestionar usuarios', 'error');
+                    }
                     break;
                 case 'logout':
-                    logout();
+                    appUtils.logout();
                     break;
                 default:
                     console.log('Acción no reconocida:', action);
@@ -301,20 +294,35 @@
             return user && ['admin', 'chef'].includes(user.role);
         }
 
-        function showAlert(containerId, message, type) {
+        function canManageUsers() {
+            const user = appUtils.getCurrentUser();
+            return user && user.role === 'admin';
+        }
+
+        function showAlert(message, type) {
             // Crear alerta temporal
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
             alert.textContent = message;
-            alert.style.position = 'fixed';
-            alert.style.top = '20px';
-            alert.style.right = '20px';
-            alert.style.zIndex = '9999';
+            alert.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                max-width: 300px;
+                ${type === 'error' ? 'background-color: #dc3545;' : 'background-color: #28a745;'}
+            `;
             
             document.body.appendChild(alert);
             
             setTimeout(() => {
-                document.body.removeChild(alert);
+                if (document.body.contains(alert)) {
+                    document.body.removeChild(alert);
+                }
             }, 3000);
         }
 
@@ -361,23 +369,19 @@
             const user = appUtils.getCurrentUser();
             
             if (user) {
-                // Ocultar sección de admin si no es admin
+                const manageUsersBtn = document.getElementById('manageUsersBtn');
+                
+                // Ocultar gestión de usuarios si no es admin
                 if (user.role !== 'admin') {
-                    document.getElementById('adminSection').style.display = 'none';
+                    manageUsersBtn.style.display = 'none';
                 }
 
-                // Configurar botones según el rol
-                const addProductBtn = document.getElementById('addProductBtn');
-                const newOrderBtn = document.getElementById('newOrderBtn');
-                const kitchenBtn = document.getElementById('kitchenBtn');
-
-                if (user.role === 'customer') {
-                    addProductBtn.style.display = 'none';
-                    newOrderBtn.textContent = '🛒 Hacer Pedido';
-                    kitchenBtn.style.display = 'none';
-                } else if (user.role === 'chef') {
-                    newOrderBtn.style.display = 'none';
-                    kitchenBtn.textContent = '👨‍🍳 Mi Cocina';
+                // Configurar acceso a agregar productos
+                if (!canAddProducts()) {
+                    const addProductBtn = document.querySelector('[data-action="add-product"]');
+                    addProductBtn.disabled = true;
+                    addProductBtn.style.opacity = '0.6';
+                    addProductBtn.title = 'Solo administradores y chefs pueden agregar productos';
                 }
             }
         }
@@ -386,23 +390,6 @@
         function goToPage(path) {
             window.location.href = path;
         }
-
-        function changePassword() {
-            appUtils.showAlert('statsGrid', 'Funcionalidad próximamente', 'warning');
-        }
-
-        // Event handlers para botones específicos
-        document.getElementById('addProductBtn')?.addEventListener('click', () => {
-            goToPage('/products/new');
-        });
-
-        document.getElementById('newOrderBtn')?.addEventListener('click', () => {
-            goToPage('/orders/new');
-        });
-
-        document.getElementById('kitchenBtn')?.addEventListener('click', () => {
-            goToPage('/kitchen');
-        });
     </script>
 </body>
 </html>
