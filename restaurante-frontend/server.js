@@ -18,21 +18,38 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Middlewares básicos
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan('dev'));
+
+// Solo usar morgan en desarrollo
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
 app.use(cors());
 
-// Configuración básica de Helmet
+// Configuración optimizada de Helmet para producción
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      scriptSrcAttr: ["'unsafe-inline'"], // Esto permite onclick
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      connectSrc: ["'self'", "https://tallerelevita2-1.onrender.com", "http://localhost:3000"]
+      connectSrc: [
+        "'self'", 
+        "https://tallerelevita2-1.onrender.com", 
+        "http://localhost:3000"
+      ],
+      imgSrc: ["'self'", "data:", "https:"]
     }
   }
 }));
+
+// Middleware para hacer API_URL disponible en todas las vistas
+app.use((req, res, next) => {
+  res.locals.API_URL = process.env.API_URL;
+  res.locals.NODE_ENV = process.env.NODE_ENV;
+  next();
+});
 
 // Rutas básicas
 app.get('/', (req, res) => {
@@ -94,6 +111,7 @@ app.get('/orders/edit/:id', (req, res) => {
     orderId: req.params.id
   });
 });
+
 app.get('/orders', (req, res) => {
   res.render('orders', { 
     title: 'Pedidos'
@@ -129,27 +147,37 @@ app.get('/categories', (req, res) => {
   });
 });
 
+// Health check para Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'Frontend is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Manejo de errores 404
 app.use((req, res) => {
-  res.status(404).send(`
-    <h1>404 - Página no encontrada</h1>
-    <p>La página ${req.url} no existe.</p>
-    <a href="/login">Volver al Login</a>
-  `);
+  res.status(404).render('login', {
+    title: 'Página no encontrada',
+    error: `La página ${req.url} no existe.`
+  });
 });
 
 // Manejo de errores generales
 app.use((error, req, res, next) => {
   console.error('Error:', error);
-  res.status(500).send(`
-    <h1>500 - Error interno del servidor</h1>
-    <p>${error.message}</p>
-    <a href="/login">Volver al Login</a>
-  `);
+  res.status(500).render('login', {
+    title: 'Error del servidor',
+    error: process.env.NODE_ENV === 'production' 
+      ? 'Error interno del servidor' 
+      : error.message
+  });
 });
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Frontend servidor escuchando en http://localhost:${PORT}`);
-  console.log(`🌐 Ve a http://localhost:${PORT}/login para empezar`);
+  console.log(`Frontend servidor escuchando en puerto ${PORT}`);
+  console.log(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`API URL: ${process.env.API_URL}`);
 });
