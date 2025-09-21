@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Restaurante</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .form-body {
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 300;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .form-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-section h3 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .products-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .product-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 2fr auto;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .product-item select,
+        .product-item input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .btn-remove {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .btn-remove:hover {
+            background: #c82333;
+        }
+
+        .btn-add-product {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .btn-add-product:hover {
+            background: #218838;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .total-section {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .total-section h4 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .product-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body class="form-body">
+    <div class="form-header">
+        <div class="header-content">
+            <h1 class="header-title">Crear Nuevo Pedido</h1>
+            <button class="btn btn-secondary btn-small" onclick="goBack()">← Volver</button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="form-card">
+            <form id="orderForm">
+                <!-- Información básica del pedido -->
+                <div class="form-section">
+                    <h3>Información del Pedido</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="tableNumber">Mesa *</label>
+                            <select id="tableNumber" name="tableNumber" required>
+                                <option value="">Seleccionar mesa</option>
+                                <option value="1">Mesa 1</option>
+                                <option value="2">Mesa 2</option>
+                                <option value="3">Mesa 3</option>
+                                <option value="4">Mesa 4</option>
+                                <option value="5">Mesa 5</option>
+                                <option value="6">Mesa 6</option>
+                                <option value="7">Mesa 7</option>
+                                <option value="8">Mesa 8</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="paymentMethod">Método de Pago *</label>
+                            <select id="paymentMethod" name="paymentMethod" required>
+                                <option value="">Seleccionar método</option>
+                                <option value="cash">Efectivo</option>
+                                <option value="card">Tarjeta</option>
+                                <option value="transfer">Transferencia</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="notes">Notas del pedido</label>
+                            <textarea id="notes" name="notes" rows="3" placeholder="Instrucciones especiales para el pedido..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos del pedido -->
+                <div class="form-section">
+                    <h3>Productos del Pedido</h3>
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+                    <div class="products-section">
+                        <div id="productsContainer">
+                            <!-- Los productos se agregan aquí dinámicamente -->
+                        </div>
+                        <button type="button" class="btn-add-product" onclick="addProductRow()" id="addProductBtn">+ Agregar Producto</button>
+                    </div>
+                </div>
+
+                <!-- Total -->
+                <div class="total-section">
+                    <h4>Total: $<span id="orderTotal">0</span></h4>
+                </div>
+
+                <!-- Acciones -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="goBack()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Creando pedido...</p>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let availableProducts = [];
+        let productCounter = 0;
+        let isProductsLoaded = false;
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            const currentUser = appUtils.getCurrentUser();
+            if (!currentUser) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Deshabilitar el botón hasta que se carguen los productos
+            document.getElementById('addProductBtn').disabled = true;
+
+            try {
+                await loadProducts();
+                if (isProductsLoaded) {
+                    addProductRow(); // Agregar primera fila de producto
+                    setupEventListeners();
+                    document.getElementById('addProductBtn').disabled = false;
+                }
+            } catch (error) {
+                showError('Error inicial: ' + error.message);
+            }
+        });
+
+        // Cargar productos disponibles
+        async function loadProducts() {
+            try {
+                showError('', false); // Ocultar errores previos
+                
+                // Verificar si appUtils existe
+                if (!window.appUtils || typeof appUtils.getProducts !== 'function') {
+                    console.warn('appUtils no disponible, usando productos de ejemplo');
+                    useExampleProducts();
+                    return;
+                }
+
+                // Usar el filtro correcto: isAvailable en lugar de available
+                const response = await appUtils.getProducts({ available: true });
+                
+                console.log('Respuesta completa de la API:', response);
+                
+                if (response && response.success) {
+                    // Tu API devuelve productos directamente en response.data (no en response.data.products)
+                    if (Array.isArray(response.data) && response.data.length > 0) {
+                        // Filtrar solo productos disponibles
+                        availableProducts = response.data.filter(product => product.isAvailable !== false);
+                        
+                        if (availableProducts.length === 0) {
+                            console.warn('No hay productos disponibles, usando productos de ejemplo');
+                            useExampleProducts();
+                            return;
+                        }
+                        
+                        isProductsLoaded = true;
+                        console.log('Productos cargados desde API:', availableProducts.length);
+                        console.log('Primer producto:', availableProducts[0]);
+                        
+                    } else {
+                        console.warn('No hay productos en la respuesta de la API:', response.data);
+                        useExampleProducts();
+                    }
+                } else {
+                    console.warn('Respuesta de API no exitosa:', response);
+                    useExampleProducts();
+                }
+                
+            } catch (error) {
+                console.error('Error cargando productos:', error);
+                console.error('Detalles del error:', error.message);
+                
+                // Si es un error 401, mostrar mensaje específico
+                if (error.message && error.message.includes('401')) {
+                    showError('Error de autenticación. Por favor, inicia sesión nuevamente.', true);
+                } else {
+                    showError('No se pudieron cargar productos desde el servidor. Usando productos de ejemplo.', true);
+                }
+                
+                useExampleProducts();
+            }
+        }
+
+        // Usar productos de ejemplo cuando no se pueden cargar desde la API
+        function useExampleProducts() {
+            // IMPORTANTE: Estos IDs deben existir en tu base de datos real
+            // O cambiarlos por IDs reales cuando tengas productos en tu backend
+            availableProducts = [
+                { _id: 'example_1', name: 'Hamburguesa Clásica', price: 15000, isAvailable: true },
+                { _id: 'example_2', name: 'Pizza Margarita', price: 20000, isAvailable: true },
+                { _id: 'example_3', name: 'Ensalada César', price: 12000, isAvailable: true },
+                { _id: 'example_4', name: 'Papas Fritas', price: 8000, isAvailable: true },
+                { _id: 'example_5', name: 'Refresco', price: 5000, isAvailable: true },
+                { _id: 'example_6', name: 'Sandwich Club', price: 13000, isAvailable: true },
+                { _id: 'example_7', name: 'Sopa del día', price: 9000, isAvailable: true },
+                { _id: 'example_8', name: 'Café Americano', price: 4000, isAvailable: true }
+            ];
+            isProductsLoaded = true;
+            console.log('Usando productos de ejemplo:', availableProducts.length);
+        }
+
+        // Mostrar/ocultar mensajes de error
+        function showError(message, show = true) {
+            const errorDiv = document.getElementById('errorMessage');
+            if (show && message) {
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        }
+
+      function addProductRow() {
+    if (!isProductsLoaded || !Array.isArray(availableProducts)) {
+        showError('Los productos aún no se han cargado. Por favor espera un momento.');
+        return;
+    }
+
+    productCounter++;
+    const container = document.getElementById('productsContainer');
+    
+    const productRow = document.createElement('div');
+    productRow.className = 'product-item';
+    productRow.id = `product-${productCounter}`;
+    
+    let productOptions = '<option value="">Seleccionar producto</option>';
+    availableProducts.forEach(product => {
+        productOptions += `<option value="${product._id}" data-price="${product.price}">${product.name} - $${product.price.toLocaleString()}</option>`;
+    });
+    
+    productRow.innerHTML = `
+        <select name="product" required onchange="updateProductPrice(${productCounter})">
+            ${productOptions}
+        </select>
+        
+        <input type="number" name="quantity" min="1" value="1" required onchange="updateTotal()">
+        
+        <span class="item-price">$0</span>
+        
+        
+    `;
+    
+    container.appendChild(productRow);
+}
+        // Remover fila de producto
+        function removeProductRow(id) {
+            const row = document.getElementById(`product-${id}`);
+            if (row) {
+                row.remove();
+                updateTotal();
+            }
+        }
+
+        // Actualizar precio del producto
+        function updateProductPrice(rowId) {
+            const row = document.getElementById(`product-${rowId}`);
+            if (!row) return;
+            
+            const select = row.querySelector('select[name="product"]');
+            const priceSpan = row.querySelector('.item-price');
+            const quantityInput = row.querySelector('input[name="quantity"]');
+            
+            const selectedOption = select.options[select.selectedIndex];
+            const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+            const quantity = parseInt(quantityInput.value) || 1;
+            
+            priceSpan.textContent = `$${(price * quantity).toLocaleString()}`;
+            updateTotal();
+        }
+
+        // Actualizar total del pedido
+        function updateTotal() {
+            let total = 0;
+            
+            document.querySelectorAll('.product-item').forEach(row => {
+                const select = row.querySelector('select[name="product"]');
+                const quantityInput = row.querySelector('input[name="quantity"]');
+                
+                if (select.value) {
+                    const selectedOption = select.options[select.selectedIndex];
+                    const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                    const quantity = parseInt(quantityInput.value) || 1;
+                    total += price * quantity;
+                }
+            });
+            
+            document.getElementById('orderTotal').textContent = total.toLocaleString();
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            document.getElementById('orderForm').addEventListener('submit', handleSubmit);
+            
+            // Actualizar total cuando cambie la cantidad
+            document.addEventListener('input', function(e) {
+                if (e.target.name === 'quantity') {
+                    // Encontrar el ID de la fila
+                    const row = e.target.closest('.product-item');
+                    const rowId = row.id.replace('product-', '');
+                    updateProductPrice(parseInt(rowId));
+                }
+            });
+        }
+
+        // Manejar envío del formulario
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                // Mostrar loading
+                document.getElementById('loadingOverlay').style.display = 'flex';
+                
+                // Recopilar datos del formulario
+                const formData = new FormData(e.target);
+                const items = [];
+                
+                // Obtener productos seleccionados
+                document.querySelectorAll('.product-item').forEach(row => {
+                    const productSelect = row.querySelector('select[name="product"]');
+                    const quantityInput = row.querySelector('input[name="quantity"]');
+                    const instructionsInput = row.querySelector('input[name="specialInstructions"]');
+                    
+                    if (productSelect.value && quantityInput.value) {
+                        // Obtener precio del producto seleccionado
+                        const selectedOption = productSelect.options[productSelect.selectedIndex];
+                        const price = parseFloat(selectedOption.getAttribute('data-price') || 0);
+                        
+                        items.push({
+                            product: productSelect.value,
+                            quantity: parseInt(quantityInput.value),
+                            price: price,
+                            specialInstructions: instructionsInput.value || ''
+                        });
+                    }
+                });
+                
+                // Validar que hay al menos un producto
+                if (items.length === 0) {
+                    throw new Error('Debe agregar al menos un producto al pedido');
+                }
+                
+                // Validar campos requeridos
+                if (!formData.get('tableNumber')) {
+                    throw new Error('Debe seleccionar una mesa');
+                }
+                
+                if (!formData.get('paymentMethod')) {
+                    throw new Error('Debe seleccionar un método de pago');
+                }
+                
+                // Calcular total
+                const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                
+                // Preparar datos del pedido con el formato exacto que espera la API
+                const orderData = {
+                    items: items,
+                    tableNumber: parseInt(formData.get('tableNumber')),
+                    notes: formData.get('notes') || '',
+                    paymentMethod: formData.get('paymentMethod'),
+                    total: total,
+                    status: 'pending' // Estado inicial
+                };
+                
+                console.log('Datos del pedido a enviar:', orderData);
+                
+                // Verificar si la función createOrder existe
+                if (!window.appUtils || typeof appUtils.createOrder !== 'function') {
+                    throw new Error('El sistema de pedidos no está disponible.');
+                }
+                
+                // Crear pedido
+                const response = await appUtils.createOrder(orderData);
+                
+                if (response && response.success) {
+                    showError('¡Pedido creado exitosamente!', false);
+                    setTimeout(() => {
+                        window.location.href = '/orders';
+                    }, 1500);
+                } else {
+                    throw new Error(response?.message || 'Error desconocido al crear el pedido');
+                }
+                
+            } catch (error) {
+                console.error('Error creando pedido:', error);
+                showError('Error creando pedido: ' + error.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        // Volver al dashboard
+        function goBack() {
+            if (confirm('¿Está seguro de salir? Se perderán los datos no guardados.')) {
+                window.location.href = '/orders';
+            }
+        }
+    </script>
+</body>
+</html>

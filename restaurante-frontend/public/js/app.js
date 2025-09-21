@@ -41,18 +41,69 @@ async function initializeApp() {
     }
 }
 
-// Función para mostrar alertas
+// Función para mostrar alertas mejorada
 function showAlert(elementId, message, type = 'error') {
-    const alertElement = document.getElementById(elementId);
-    if (alertElement) {
-        alertElement.textContent = message;
-        alertElement.className = `alert alert-${type}`;
-        alertElement.classList.remove('hidden');
-        
-        setTimeout(() => {
-            alertElement.classList.add('hidden');
-        }, 5000);
+    // Si elementId es un string y existe el elemento, usarlo
+    let targetElement = null;
+    if (typeof elementId === 'string') {
+        targetElement = document.getElementById(elementId);
     }
+    
+    // Si no existe el elemento o elementId no es válido, crear alerta flotante
+    if (!targetElement) {
+        createFloatingAlert(message, type);
+        return;
+    }
+
+    targetElement.textContent = message;
+    targetElement.className = `alert alert-${type}`;
+    targetElement.classList.remove('hidden');
+    
+    setTimeout(() => {
+        targetElement.classList.add('hidden');
+    }, 5000);
+}
+
+// Crear alerta flotante
+function createFloatingAlert(message, type) {
+    const alert = document.createElement('div');
+    alert.className = `floating-alert alert-${type}`;
+    alert.textContent = message;
+    alert.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        max-width: 350px;
+        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+        ${type === 'error' ? 'background-color: #dc3545;' : 
+          type === 'success' ? 'background-color: #28a745;' : 
+          'background-color: #17a2b8;'}
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Animar entrada
+    setTimeout(() => {
+        alert.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Animar salida y eliminar
+    setTimeout(() => {
+        alert.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (document.body.contains(alert)) {
+                document.body.removeChild(alert);
+            }
+        }, 300);
+    }, 4000);
 }
 
 // Función para hacer requests a la API
@@ -69,8 +120,8 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         options.headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    // Agregar datos si es POST/PUT
-    if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+    // Agregar datos si es POST/PUT/PATCH
+    if (data && ['POST', 'PUT', 'PATCH'].includes(method)) {
         options.body = JSON.stringify(data);
     }
 
@@ -92,8 +143,8 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
 // Verificar token
 async function verifyToken() {
     try {
-        // Intentar hacer una petición autenticada
-        await apiRequest('/users');
+        // Intentar hacer una petición autenticada simple
+        await apiRequest('/orders?limit=1');
         return true;
     } catch (error) {
         console.log('Token inválido:', error.message);
@@ -200,6 +251,230 @@ function showLoading(formId, show) {
     }
 }
 
+// ============================================================================
+// FUNCIONES ESPECÍFICAS PARA PEDIDOS
+// ============================================================================
+
+// Obtener todos los pedidos con filtros
+async function getOrders(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        
+        // Agregar filtros si existen
+        Object.keys(filters).forEach(key => {
+            if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+                params.append(key, filters[key]);
+            }
+        });
+
+        const response = await apiRequest(`/orders?${params}`);
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo pedidos:', error);
+        throw error;
+    }
+}
+
+// Obtener un pedido específico por ID
+async function getOrderById(orderId) {
+    try {
+        const response = await apiRequest(`/orders/${orderId}`);
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo pedido:', error);
+        throw error;
+    }
+}
+
+// Crear nuevo pedido
+async function createOrder(orderData) {
+    try {
+        const response = await apiRequest('/orders', 'POST', orderData);
+        return response;
+    } catch (error) {
+        console.error('Error creando pedido:', error);
+        throw error;
+    }
+}
+
+// Actualizar pedido completo
+async function updateOrder(orderId, orderData) {
+    try {
+        const response = await apiRequest(`/orders/${orderId}`, 'PUT', orderData);
+        return response;
+    } catch (error) {
+        console.error('Error actualizando pedido:', error);
+        throw error;
+    }
+}
+
+// Actualizar solo el estado de un pedido
+async function updateOrderStatus(orderId, newStatus) {
+    try {
+        // Primero obtener el pedido actual
+        const currentOrder = await apiRequest(`/orders/${orderId}`);
+        if (!currentOrder.success) throw new Error(currentOrder.message);
+        
+        // Preparar datos para actualizar (manteniendo todo igual excepto el estado)
+        const orderData = currentOrder.data;
+        const updatedData = {
+            items: orderData.items.map(item => ({
+                product: item.product._id || item.product,
+                quantity: item.quantity,
+                specialInstructions: item.specialInstructions || ''
+            })),
+            tableNumber: orderData.tableNumber,
+            notes: orderData.notes || '',
+            paymentMethod: orderData.paymentMethod,
+            status: newStatus // Nuevo estado
+        };
+        
+        const response = await apiRequest(`/orders/${orderId}`, 'PUT', updatedData);
+        return response;
+    } catch (error) {
+        console.error('Error actualizando estado del pedido:', error);
+        throw error;
+    }
+}
+
+// Eliminar pedido
+async function deleteOrder(orderId) {
+    try {
+        const response = await apiRequest(`/orders/${orderId}`, 'DELETE');
+        return response;
+    } catch (error) {
+        console.error('Error eliminando pedido:', error);
+        throw error;
+    }
+}
+
+// ============================================================================
+// FUNCIONES ESPECÍFICAS PARA PRODUCTOS
+// ============================================================================
+
+// Reemplaza la función getProducts en tu app.js con esta versión corregida:
+
+// Obtener todos los productos
+async function getProducts(filters = {}) {
+    try {
+        const params = new URLSearchParams();
+        
+        Object.keys(filters).forEach(key => {
+            if (filters[key] !== null && filters[key] !== undefined && filters[key] !== '') {
+                params.append(key, filters[key]);
+            }
+        });
+
+        // Agregar parámetros por defecto para obtener todos los productos disponibles
+        if (!params.has('limit')) {
+            params.append('limit', '100'); // Obtener hasta 100 productos
+        }
+
+        const response = await apiRequest(`/products?${params}`);
+        
+        console.log('Response from /products API:', response);
+        
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo productos:', error);
+        throw error;
+    }
+}
+
+// Obtener producto por ID
+async function getProductById(productId) {
+    try {
+        const response = await apiRequest(`/products/${productId}`);
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo producto:', error);
+        throw error;
+    }
+}
+
+// ============================================================================
+// FUNCIONES ESPECÍFICAS PARA CATEGORÍAS
+// ============================================================================
+
+// Obtener todas las categorías
+async function getCategories() {
+    try {
+        const response = await apiRequest('/categories');
+        return response;
+    } catch (error) {
+        console.error('Error obteniendo categorías:', error);
+        throw error;
+    }
+}
+
+// ============================================================================
+// UTILIDADES PARA PEDIDOS
+// ============================================================================
+
+// Formatear estado de pedido para mostrar
+function formatOrderStatus(status) {
+    const statusMap = {
+        'pending': 'Pendiente',
+        'confirmed': 'Confirmado', 
+        'preparing': 'Preparando',
+        'ready': 'Listo',
+        'delivered': 'Entregado',
+        'cancelled': 'Cancelado'
+    };
+    return statusMap[status] || status;
+}
+
+// Formatear método de pago
+function formatPaymentMethod(method) {
+    const methodMap = {
+        'cash': 'Efectivo',
+        'card': 'Tarjeta',
+        'transfer': 'Transferencia'
+    };
+    return methodMap[method] || method || 'No especificado';
+}
+
+// Verificar si el usuario puede actualizar un pedido
+function canUpdateOrder(order, userRole) {
+    if (userRole === 'admin') return true;
+    
+    // Los empleados pueden actualizar pedidos según su rol y el estado
+    if (userRole === 'waiter') {
+        return ['pending'].includes(order.status);
+    }
+    
+    if (userRole === 'chef') {
+        return ['confirmed', 'preparing'].includes(order.status);
+    }
+    
+    // Los clientes solo pueden ver sus pedidos, no actualizarlos
+    return false;
+}
+
+// Obtener los estados permitidos para transición
+function getAllowedStatusTransitions(currentStatus, userRole) {
+    const transitions = {
+        'admin': {
+            'pending': ['confirmed', 'cancelled'],
+            'confirmed': ['preparing', 'cancelled'],
+            'preparing': ['ready', 'cancelled'],
+            'ready': ['delivered'],
+            'delivered': [],
+            'cancelled': []
+        },
+        'waiter': {
+            'pending': ['confirmed'],
+            'ready': ['delivered']
+        },
+        'chef': {
+            'confirmed': ['preparing'],
+            'preparing': ['ready']
+        }
+    };
+    
+    return transitions[userRole]?.[currentStatus] || [];
+}
+
 // Event listeners globales
 document.addEventListener('DOMContentLoaded', function() {
     // Formulario de login
@@ -259,9 +534,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Funciones utilitarias globales
 window.appUtils = {
+    // API
     apiRequest,
-    showAlert,
-    logout,
+    
+    // Auth
     getCurrentUser: () => currentUser,
-    getAuthToken: () => authToken
+    getAuthToken: () => authToken,
+    logout,
+    
+    // UI
+    showAlert,
+    createFloatingAlert,
+    
+    // Orders
+    getOrders,
+    getOrderById,
+    createOrder,
+    updateOrder,
+    updateOrderStatus,
+    deleteOrder,
+    
+    // Products
+    getProducts,
+    getProductById,
+    
+    // Categories
+    getCategories,
+    
+    // Utilities
+    formatOrderStatus,
+    formatPaymentMethod,
+    canUpdateOrder,
+    getAllowedStatusTransitions
 };

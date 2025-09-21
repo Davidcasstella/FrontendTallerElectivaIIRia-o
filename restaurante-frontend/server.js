@@ -63,7 +63,7 @@ app.get('/products', (req, res) => {
   });
 });
 
-// Nuevas rutas para productos
+// Rutas para productos
 app.get('/products/new', (req, res) => {
   res.render('product-form', { 
     title: 'Nuevo Producto',
@@ -80,7 +80,20 @@ app.get('/products/edit/:id', (req, res) => {
   });
 });
 
-// Ruta para pedidos (la crearemos después)
+// Rutas para pedidos - ORDEN IMPORTANTE: /orders/new ANTES de /orders
+app.get('/orders/new', (req, res) => {
+  res.render('order-form', { 
+    title: 'Nuevo Pedido'
+  });
+});
+
+// Agregar ANTES de la ruta /orders
+app.get('/orders/edit/:id', (req, res) => {
+  res.render('order-edit', { 
+    title: 'Editar Pedido',
+    orderId: req.params.id
+  });
+});
 app.get('/orders', (req, res) => {
   res.render('orders', { 
     title: 'Pedidos'
@@ -94,14 +107,7 @@ app.get('/users', (req, res) => {
   });
 });
 
-// Ruta para gestión de categorías
-app.get('/categories', (req, res) => {
-  res.render('categories', { 
-    title: 'Gestión de Categorías'
-  });
-});
-
-// Ruta para formulario de categoría
+// Rutas para categorías
 app.get('/categories/new', (req, res) => {
   res.render('category-form', { 
     title: 'Nueva Categoría',
@@ -114,6 +120,12 @@ app.get('/categories/edit/:id', (req, res) => {
     title: 'Editar Categoría',
     mode: 'edit',
     categoryId: req.params.id
+  });
+});
+
+app.get('/categories', (req, res) => {
+  res.render('categories', { 
+    title: 'Gestión de Categorías'
   });
 });
 

@@ -129,6 +129,7 @@
         }
 
         .status-pending { background: #fff3cd; color: #856404; }
+        .status-confirmed { background: #d1ecf1; color: #0c5460; }
         .status-preparing { background: #d1ecf1; color: #0c5460; }
         .status-ready { background: #d4edda; color: #155724; }
         .status-delivered { background: #e2e3e5; color: #383d41; }
@@ -241,6 +242,48 @@
             color: #333;
         }
 
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #667eea;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
         @media (max-width: 768px) {
             .controls-grid {
                 grid-template-columns: 1fr;
@@ -294,22 +337,28 @@
         <!-- Controles de búsqueda y filtros -->
         <div class="controls-section">
             <div class="controls-grid">
-                <input type="text" class="search-input" id="searchInput" placeholder="Buscar por cliente o ID...">
+                <input type="text" class="search-input" id="searchInput" placeholder="Buscar por mesa...">
                 
                 <select class="filter-select" id="statusFilter">
                     <option value="">Todos los estados</option>
                     <option value="pending">Pendiente</option>
+                    <option value="confirmed">Confirmado</option>
                     <option value="preparing">Preparando</option>
                     <option value="ready">Listo</option>
                     <option value="delivered">Entregado</option>
                     <option value="cancelled">Cancelado</option>
                 </select>
 
-                <select class="filter-select" id="dateFilter">
-                    <option value="">Todas las fechas</option>
-                    <option value="today">Hoy</option>
-                    <option value="week">Esta semana</option>
-                    <option value="month">Este mes</option>
+                <select class="filter-select" id="tableFilter">
+                    <option value="">Todas las mesas</option>
+                    <option value="1">Mesa 1</option>
+                    <option value="2">Mesa 2</option>
+                    <option value="3">Mesa 3</option>
+                    <option value="4">Mesa 4</option>
+                    <option value="5">Mesa 5</option>
+                    <option value="6">Mesa 6</option>
+                    <option value="7">Mesa 7</option>
+                    <option value="8">Mesa 8</option>
                 </select>
 
                 <button class="btn btn-primary btn-small" id="refreshBtn">🔄 Actualizar</button>
@@ -323,11 +372,17 @@
                 <p>Cargando pedidos...</p>
             </div>
         </div>
+
+        <!-- Paginación -->
+        <div id="paginationContainer"></div>
     </div>
 
     <script src="/js/app.js"></script>
     <script>
         let orders = [];
+        let currentPage = 1;
+        let totalPages = 1;
+        let isLoading = false;
 
         document.addEventListener('DOMContentLoaded', async function() {
             const currentUser = appUtils.getCurrentUser();
@@ -349,9 +404,14 @@
             switch(currentUser.role) {
                 case 'customer':
                     headerTitle.textContent = 'Mis Pedidos';
+                    // Ocultar filtro de mesa para clientes
+                    document.getElementById('tableFilter').style.display = 'none';
                     break;
                 case 'chef':
                     headerTitle.textContent = 'Pedidos de Cocina';
+                    break;
+                case 'waiter':
+                    headerTitle.textContent = 'Pedidos del Restaurante';
                     break;
                 case 'admin':
                     headerTitle.textContent = 'Gestión de Pedidos';
@@ -359,130 +419,56 @@
             }
         }
 
-        // Cargar pedidos (simulados)
-        async function loadOrders() {
+        // Cargar pedidos desde la API
+        async function loadOrders(page = 1) {
+            if (isLoading) return;
+            
             try {
-                const searchTerm = document.getElementById('searchInput').value;
+                isLoading = true;
+                showLoadingSpinner();
+
                 const status = document.getElementById('statusFilter').value;
-                const dateRange = document.getElementById('dateFilter').value;
+                const tableNumber = document.getElementById('tableFilter').value;
 
-                // Datos simulados para demostración
-                const allOrders = generateMockOrders();
-                
-                // Aplicar filtros
-                let filteredOrders = allOrders;
-                
-                if (searchTerm) {
-                    filteredOrders = filteredOrders.filter(order => 
-                        order.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        order._id.includes(searchTerm.toLowerCase())
-                    );
-                }
-                
-                if (status) {
-                    filteredOrders = filteredOrders.filter(order => order.status === status);
-                }
-                
-                if (dateRange) {
-                    const now = new Date();
-                    filteredOrders = filteredOrders.filter(order => {
-                        const orderDate = new Date(order.createdAt);
-                        switch(dateRange) {
-                            case 'today':
-                                return orderDate.toDateString() === now.toDateString();
-                            case 'week':
-                                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                                return orderDate >= weekAgo;
-                            case 'month':
-                                const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-                                return orderDate >= monthAgo;
-                            default:
-                                return true;
-                        }
-                    });
-                }
+                // Construir parámetros de consulta
+                const filters = {
+                    page: page.toString(),
+                    limit: '10'
+                };
 
-                // Filtrar por rol
-                const currentUser = appUtils.getCurrentUser();
-                if (currentUser.role === 'customer') {
-                    filteredOrders = filteredOrders.filter(order => order.user.id === currentUser._id);
-                } else if (currentUser.role === 'chef') {
-                    filteredOrders = filteredOrders.filter(order => 
-                        ['pending', 'preparing'].includes(order.status)
-                    );
-                }
+                if (status) filters.status = status;
+                if (tableNumber) filters.tableNumber = tableNumber;
 
-                orders = filteredOrders;
-                renderOrders();
-                updateStats();
+                const response = await appUtils.getOrders(filters);
+                
+                if (response.success) {
+                    orders = response.data.orders;
+                    currentPage = response.data.pagination.page;
+                    totalPages = response.data.pagination.pages;
+                    
+                    renderOrders();
+                    renderPagination();
+                    updateStats();
+                } else {
+                    showError('Error al cargar pedidos: ' + response.message);
+                }
                 
             } catch (error) {
                 console.error('Error cargando pedidos:', error);
                 showError('Error al cargar pedidos: ' + error.message);
+            } finally {
+                isLoading = false;
             }
         }
 
-        // Generar pedidos simulados
-        function generateMockOrders() {
-            const currentUser = appUtils.getCurrentUser();
-            const statuses = ['pending', 'preparing', 'ready', 'delivered', 'cancelled'];
-            const orderTypes = ['delivery', 'pickup'];
-            
-            const mockProducts = [
-                { _id: '1', name: 'Hamburguesa Clásica', price: 15000 },
-                { _id: '2', name: 'Pizza Margherita', price: 20000 },
-                { _id: '3', name: 'Ensalada César', price: 12000 },
-                { _id: '4', name: 'Pasta Carbonara', price: 18000 },
-                { _id: '5', name: 'Pollo a la Parrilla', price: 22000 }
-            ];
-
-            const mockUsers = [
-                { _id: currentUser._id, name: currentUser.name, id: currentUser._id },
-                { _id: '2', name: 'María García', id: '2' },
-                { _id: '3', name: 'Carlos López', id: '3' },
-                { _id: '4', name: 'Ana Rodríguez', id: '4' },
-                { _id: '5', name: 'Luis Martínez', id: '5' }
-            ];
-
-            const orders = [];
-            
-            for (let i = 1; i <= 15; i++) {
-                const randomUser = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-                const itemsCount = Math.floor(Math.random() * 3) + 1;
-                const items = [];
-                let total = 0;
-
-                for (let j = 0; j < itemsCount; j++) {
-                    const product = mockProducts[Math.floor(Math.random() * mockProducts.length)];
-                    const quantity = Math.floor(Math.random() * 3) + 1;
-                    items.push({
-                        product: product,
-                        quantity: quantity,
-                        price: product.price
-                    });
-                    total += product.price * quantity;
-                }
-
-                const daysAgo = Math.floor(Math.random() * 7);
-                const hoursAgo = Math.floor(Math.random() * 24);
-                const createdAt = new Date();
-                createdAt.setDate(createdAt.getDate() - daysAgo);
-                createdAt.setHours(createdAt.getHours() - hoursAgo);
-
-                orders.push({
-                    _id: `order_${i.toString().padStart(3, '0')}`,
-                    user: randomUser,
-                    status: statuses[Math.floor(Math.random() * statuses.length)],
-                    orderType: orderTypes[Math.floor(Math.random() * orderTypes.length)],
-                    items: items,
-                    total: total,
-                    deliveryAddress: Math.random() > 0.5 ? `Calle ${i} #${10 + i}-${20 + i}` : null,
-                    createdAt: createdAt.toISOString(),
-                    updatedAt: createdAt.toISOString()
-                });
-            }
-
-            return orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Mostrar spinner de carga
+        function showLoadingSpinner() {
+            document.getElementById('ordersContainer').innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Cargando pedidos...</p>
+                </div>
+            `;
         }
 
         // Renderizar pedidos
@@ -516,7 +502,6 @@
             const div = document.createElement('div');
             div.className = 'order-card';
             
-            const customerName = order.user?.name || 'Cliente desconocido';
             const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
             const orderTime = new Date(order.createdAt).toLocaleTimeString('es-ES', { 
                 hour: '2-digit', 
@@ -525,10 +510,10 @@
 
             div.innerHTML = `
                 <div class="order-header">
-                    <div class="order-id">#${order._id.slice(-6).toUpperCase()}</div>
-                    <div class="order-customer">${customerName}</div>
+                    <div class="order-id">${order.orderNumber || '#' + order._id.slice(-6).toUpperCase()}</div>
+                    <div class="order-customer">Mesa ${order.tableNumber}</div>
                     <div class="order-status status-${order.status}">${getStatusText(order.status)}</div>
-                    <div class="order-total">$${order.total.toLocaleString()}</div>
+                    <div class="order-total">$${order.total?.toLocaleString() || '0'}</div>
                 </div>
                 
                 <div class="order-content">
@@ -542,16 +527,16 @@
                             <span class="info-value">${orderTime}</span>
                         </div>
                         <div class="info-item">
-                            <span class="info-label">Tipo</span>
-                            <span class="info-value">${order.orderType === 'delivery' ? 'Domicilio' : 'Recoger'}</span>
+                            <span class="info-label">Método de pago</span>
+                            <span class="info-value">${getPaymentMethodText(order.paymentMethod)}</span>
                         </div>
                     </div>
 
-                    ${order.deliveryAddress ? `
+                    ${order.notes ? `
                         <div class="order-info">
                             <div class="info-item" style="grid-column: 1 / -1;">
-                                <span class="info-label">Dirección de entrega</span>
-                                <span class="info-value">${order.deliveryAddress}</span>
+                                <span class="info-label">Notas</span>
+                                <span class="info-value">${order.notes}</span>
                             </div>
                         </div>
                     ` : ''}
@@ -563,9 +548,12 @@
                                 <div class="order-item">
                                     <div>
                                         <div class="item-name">${item.product?.name || 'Producto desconocido'}</div>
-                                        <div class="item-details">Cantidad: ${item.quantity}</div>
+                                        <div class="item-details">
+                                            Cantidad: ${item.quantity}
+                                            ${item.specialInstructions ? `<br><em>Instrucciones: ${item.specialInstructions}</em>` : ''}
+                                        </div>
                                     </div>
-                                    <div class="item-price">$${(item.price * item.quantity).toLocaleString()}</div>
+                                    <div class="item-price">$${((item.price || 0) * item.quantity).toLocaleString()}</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -583,165 +571,324 @@
             return div;
         }
 
-        // Obtener botones de acción según el rol y estado
-        function getActionButtons(order) {
-            const currentUser = appUtils.getCurrentUser();
-            const buttons = [];
+// Reemplaza la función getActionButtons en tu orders.ejs con esta versión que incluye edición:
+
+function getActionButtons(order) {
+    const currentUser = appUtils.getCurrentUser();
+    const buttons = [];
+    
+    
+    
+    // Botón de editar (solo para pedidos que se pueden modificar)
+    const canEdit = ['admin', 'waiter'].includes(currentUser.role) && 
+                   ['pending', 'confirmed'].includes(order.status);
+    
+    if (canEdit) {
+        buttons.push(`
+            <button class="btn btn-primary btn-small" data-action="edit-order" data-id="${order._id}" style="background-color: #ffc107; border-color: #ffc107; color: #212529;">
+                Editar
+            </button>
+        `);
+    }
+    
+    // Botones de cambio de estado
+    if (['admin', 'waiter', 'chef'].includes(currentUser.role)) {
+        if (order.status === 'pending' && ['admin', 'waiter'].includes(currentUser.role)) {
+            buttons.push(`
+                <button class="btn btn-primary btn-small" data-action="confirm-order" data-id="${order._id}">
+                    Confirmar
+                </button>
+            `);
+        }
+        
+        if (order.status === 'confirmed' && ['chef', 'admin'].includes(currentUser.role)) {
+            buttons.push(`
+                <button class="btn btn-primary btn-small" data-action="start-preparing" data-id="${order._id}">
+                    Iniciar Preparación
+                </button>
+            `);
+        }
+        
+        if (order.status === 'preparing' && ['chef', 'admin'].includes(currentUser.role)) {
+            buttons.push(`
+                <button class="btn btn-primary btn-small" data-action="mark-ready" data-id="${order._id}">
+                    Marcar Listo
+                </button>
+            `);
+        }
+        
+        if (order.status === 'ready' && ['waiter', 'admin'].includes(currentUser.role)) {
+            buttons.push(`
+                <button class="btn btn-primary btn-small" data-action="mark-delivered" data-id="${order._id}">
+                    Marcar Entregado
+                </button>
+            `);
+        }
+        
+        // Solo admin puede cancelar pedidos
+        if (currentUser.role === 'admin' && !['delivered', 'cancelled'].includes(order.status)) {
+            buttons.push(`
+                <button class="btn btn-secondary btn-small" data-action="cancel-order" data-id="${order._id}">
+                    Cancelar
+                </button>
+            `);
+        }
+
+        // Solo admin puede eliminar pedidos pendientes o cancelados
+        if (currentUser.role === 'admin' && ['pending', 'cancelled'].includes(order.status)) {
+            buttons.push(`
+                <button class="btn btn-secondary btn-small" data-action="delete-order" data-id="${order._id}" style="background-color: #dc3545; color: white;">
+                    Eliminar
+                </button>
+            `);
+        }
+    }
+    
+    return buttons.join('');
+}
+
+        // Renderizar paginación
+        function renderPagination() {
+            const container = document.getElementById('paginationContainer');
             
-            if (currentUser.role === 'chef' && order.status === 'pending') {
-                buttons.push(`
-                    <button class="btn btn-primary btn-small" data-action="start-preparing" data-id="${order._id}">
-                        Iniciar Preparación
-                    </button>
-                `);
+            if (totalPages <= 1) {
+                container.innerHTML = '';
+                return;
             }
-            
-            if (currentUser.role === 'chef' && order.status === 'preparing') {
-                buttons.push(`
-                    <button class="btn btn-primary btn-small" data-action="mark-ready" data-id="${order._id}">
-                        Marcar Listo
-                    </button>
-                `);
-            }
-            
-            if (currentUser.role === 'admin') {
-                if (order.status !== 'delivered' && order.status !== 'cancelled') {
-                    buttons.push(`
-                        <button class="btn btn-primary btn-small" data-action="update-status" data-id="${order._id}">
-                            Cambiar Estado
-                        </button>
-                    `);
-                }
+
+            const pagination = document.createElement('div');
+            pagination.className = 'pagination';
+
+            // Botón anterior
+            pagination.innerHTML = `
+                <button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">
+                    ← Anterior
+                </button>
                 
-                if (order.status === 'pending') {
-                    buttons.push(`
-                        <button class="btn btn-secondary btn-small" data-action="cancel-order" data-id="${order._id}">
-                            Cancelar
-                        </button>
-                    `);
-                }
-            }
-            
-            return buttons.join('');
+                <div class="pagination-info">
+                    Página ${currentPage} de ${totalPages}
+                </div>
+                
+                <button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">
+                    Siguiente →
+                </button>
+            `;
+
+            container.innerHTML = '';
+            container.appendChild(pagination);
         }
 
         // Event listeners
         function setupEventListeners() {
-            document.getElementById('searchInput').addEventListener('input', debounce(loadOrders, 500));
-            document.getElementById('statusFilter').addEventListener('change', loadOrders);
-            document.getElementById('dateFilter').addEventListener('change', loadOrders);
-            document.getElementById('refreshBtn').addEventListener('click', loadOrders);
+            // Filtros con debounce para búsqueda
+            document.getElementById('searchInput').addEventListener('input', debounce(() => {
+                currentPage = 1;
+                loadOrders(1);
+            }, 500));
             
+            document.getElementById('statusFilter').addEventListener('change', () => {
+                currentPage = 1;
+                loadOrders(1);
+            });
+            
+            document.getElementById('tableFilter').addEventListener('change', () => {
+                currentPage = 1;
+                loadOrders(1);
+            });
+            
+            document.getElementById('refreshBtn').addEventListener('click', () => {
+                loadOrders(currentPage);
+            });
+            
+            // Delegación de eventos para acciones
             document.addEventListener('click', function(e) {
                 const action = e.target.getAttribute('data-action');
                 const orderId = e.target.getAttribute('data-id');
+                const page = e.target.getAttribute('data-page');
                 
                 if (action && orderId) {
                     handleOrderAction(action, orderId);
+                } else if (page) {
+                    loadOrders(parseInt(page));
                 } else if (action === 'go-back') {
                     goBack();
                 }
             });
         }
 
-        // Manejar acciones de pedidos (simulado)
         async function handleOrderAction(action, orderId) {
-            const order = orders.find(o => o._id === orderId);
-            if (!order) return;
+    const order = orders.find(o => o._id === orderId);
+    if (!order) {
+        console.error('Pedido no encontrado:', orderId);
+        return;
+    }
 
+    try {
+        let newStatus = null;
+        let confirmMessage = '';
+
+        switch(action) {
+            case 'view-order':
+                await viewOrderDetail(orderId);
+                return;
+                
+            case 'edit-order':
+                // NUEVA FUNCIONALIDAD DE EDICIÓN
+                console.log('Editando pedido:', orderId);
+                handleEditOrder(orderId);
+                return;
+                
+            case 'confirm-order':
+                newStatus = 'confirmed';
+                confirmMessage = '¿Confirmar este pedido?';
+                break;
+                
+            case 'start-preparing':
+                newStatus = 'preparing';
+                confirmMessage = '¿Iniciar preparación de este pedido?';
+                break;
+                
+            case 'mark-ready':
+                newStatus = 'ready';
+                confirmMessage = '¿Marcar este pedido como listo?';
+                break;
+                
+            case 'mark-delivered':
+                newStatus = 'delivered';
+                confirmMessage = '¿Marcar este pedido como entregado?';
+                break;
+                
+            case 'cancel-order':
+                newStatus = 'cancelled';
+                confirmMessage = '¿Estás seguro de cancelar este pedido?';
+                break;
+
+            case 'delete-order':
+                if (confirm('¿Estás seguro de eliminar este pedido? Esta acción no se puede deshacer.')) {
+                    await deleteOrder(orderId);
+                }
+                return;
+                
+            default:
+                console.error('Acción no reconocida:', action);
+                return;
+        }
+
+        if (newStatus && confirm(confirmMessage)) {
+            await updateOrderStatus(orderId, newStatus);
+        }
+
+    } catch (error) {
+        console.error('Error en handleOrderAction:', error);
+        appUtils.showAlert('ordersContainer', 'Error: ' + error.message, 'error');
+    }
+}
+// NUEVA FUNCIÓN para manejar la edición
+function handleEditOrder(orderId) {
+    if (!orderId) {
+        console.error('ID de pedido inválido');
+        appUtils.showAlert('ordersContainer', 'Error: ID de pedido inválido', 'error');
+        return;
+    }
+    
+    // Verificar permisos del usuario
+    const currentUser = appUtils.getCurrentUser();
+    if (!currentUser) {
+        appUtils.showAlert('ordersContainer', 'Debe iniciar sesión para editar pedidos', 'error');
+        window.location.href = '/login';
+        return;
+    }
+    
+    // Verificar si el usuario puede editar pedidos
+    if (!['admin', 'waiter'].includes(currentUser.role)) {
+        appUtils.showAlert('ordersContainer', 'No tiene permisos para editar pedidos', 'error');
+        return;
+    }
+    
+    // Verificar que el pedido se puede editar
+    const order = orders.find(o => o._id === orderId);
+    if (order && !['pending', 'confirmed'].includes(order.status)) {
+        appUtils.showAlert('ordersContainer', 
+            'Solo se pueden editar pedidos pendientes o confirmados', 'error');
+        return;
+    }
+    
+    // Navegar a la página de edición
+    try {
+        console.log('Navegando a editar pedido:', orderId);
+        window.location.href = `/orders/edit/${orderId}`;
+    } catch (error) {
+        console.error('Error navegando a edición:', error);
+        appUtils.showAlert('ordersContainer', 'Error al abrir el editor de pedidos', 'error');
+    }
+}
+
+        // Actualizar estado del pedido
+        async function updateOrderStatus(orderId, newStatus) {
             try {
-                switch(action) {
-                    case 'view-order':
-                        viewOrderDetail(order);
-                        break;
-                        
-                    case 'start-preparing':
-                        // Simular cambio de estado
-                        order.status = 'preparing';
-                        appUtils.showAlert('ordersContainer', 'Pedido marcado como en preparación', 'success');
-                        renderOrders();
-                        updateStats();
-                        break;
-                        
-                    case 'mark-ready':
-                        // Simular cambio de estado
-                        order.status = 'ready';
-                        appUtils.showAlert('ordersContainer', 'Pedido marcado como listo', 'success');
-                        renderOrders();
-                        updateStats();
-                        break;
-                        
-                    case 'update-status':
-                        updateOrderStatus(orderId);
-                        break;
-                        
-                    case 'cancel-order':
-                        if (confirm('¿Estás seguro de cancelar este pedido?')) {
-                            order.status = 'cancelled';
-                            appUtils.showAlert('ordersContainer', 'Pedido cancelado', 'success');
-                            renderOrders();
-                            updateStats();
-                        }
-                        break;
+                const response = await appUtils.updateOrderStatus(orderId, newStatus);
+
+                if (response.success) {
+                    appUtils.showAlert('ordersContainer', `Estado actualizado a: ${getStatusText(newStatus)}`, 'success');
+                    await loadOrders(currentPage);
+                } else {
+                    throw new Error(response.message);
                 }
             } catch (error) {
-                appUtils.showAlert('ordersContainer', 'Error: ' + error.message, 'error');
+                console.error('Error actualizando estado:', error);
+                appUtils.showAlert('ordersContainer', 'Error actualizando estado: ' + error.message, 'error');
+            }
+        }
+
+        // Eliminar pedido
+        async function deleteOrder(orderId) {
+            try {
+                const response = await appUtils.deleteOrder(orderId);
+
+                if (response.success) {
+                    appUtils.showAlert('ordersContainer', 'Pedido eliminado correctamente', 'success');
+                    await loadOrders(currentPage);
+                } else {
+                    throw new Error(response.message);
+                }
+            } catch (error) {
+                console.error('Error eliminando pedido:', error);
+                appUtils.showAlert('ordersContainer', 'Error eliminando pedido: ' + error.message, 'error');
             }
         }
 
         // Ver detalle del pedido
-        function viewOrderDetail(order) {
-            const customerName = order.user?.name || 'Cliente desconocido';
-            const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
-            const items = (order.items || []).map(item => 
-                `• ${item.product?.name || 'Producto'} x${item.quantity} - $${(item.price * item.quantity).toLocaleString()}`
-            ).join('\n');
+        async function viewOrderDetail(orderId) {
+            try {
+                const response = await appUtils.getOrderById(orderId);
+                
+                if (response.success) {
+                    const order = response.data;
+                    const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
+                    const items = (order.items || []).map(item => 
+                        `• ${item.product?.name || 'Producto'} x${item.quantity} - ${((item.price || 0) * item.quantity).toLocaleString()}${item.specialInstructions ? `\n  Instrucciones: ${item.specialInstructions}` : ''}`
+                    ).join('\n');
 
-            alert(`
-DETALLE DEL PEDIDO #${order._id.slice(-6).toUpperCase()}
+                    alert(`
+DETALLE DEL PEDIDO ${order.orderNumber || '#' + order._id.slice(-6).toUpperCase()}
 
-Cliente: ${customerName}
+Mesa: ${order.tableNumber}
 Fecha: ${orderDate}
 Estado: ${getStatusText(order.status)}
-Tipo: ${order.orderType === 'delivery' ? 'Domicilio' : 'Recoger'}
-${order.deliveryAddress ? `Dirección: ${order.deliveryAddress}` : ''}
+Método de pago: ${getPaymentMethodText(order.paymentMethod)}
+${order.notes ? `Notas: ${order.notes}` : ''}
 
 PRODUCTOS:
 ${items}
 
-TOTAL: $${order.total.toLocaleString()}
-            `.trim());
-        }
-
-        // Actualizar estado del pedido (simulado)
-        function updateOrderStatus(orderId) {
-            const newStatus = prompt(`
-Selecciona el nuevo estado:
-1. pending - Pendiente
-2. preparing - Preparando  
-3. ready - Listo
-4. delivered - Entregado
-5. cancelled - Cancelado
-
-Escribe el número:
-            `.trim());
-
-            const statusMap = {
-                '1': 'pending',
-                '2': 'preparing', 
-                '3': 'ready',
-                '4': 'delivered',
-                '5': 'cancelled'
-            };
-
-            if (statusMap[newStatus]) {
-                const order = orders.find(o => o._id === orderId);
-                if (order) {
-                    order.status = statusMap[newStatus];
-                    appUtils.showAlert('ordersContainer', 'Estado actualizado', 'success');
-                    renderOrders();
-                    updateStats();
+TOTAL: ${(order.total || 0).toLocaleString()}
+                    `.trim());
+                } else {
+                    throw new Error(response.message);
                 }
+            } catch (error) {
+                console.error('Error obteniendo detalle:', error);
+                appUtils.showAlert('ordersContainer', 'Error obteniendo detalle: ' + error.message, 'error');
             }
         }
 
@@ -749,25 +896,35 @@ Escribe el número:
         function updateStats() {
             const total = orders.length;
             const pending = orders.filter(o => o.status === 'pending').length;
-            const today = orders
+            const todayTotal = orders
                 .filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString())
-                .reduce((sum, o) => sum + o.total, 0);
+                .reduce((sum, o) => sum + (o.total || 0), 0);
 
             document.getElementById('totalOrders').textContent = total;
             document.getElementById('pendingOrders').textContent = pending;
-            document.getElementById('todayRevenue').textContent = `$${today.toLocaleString()}`;
+            document.getElementById('todayRevenue').textContent = `$${todayTotal.toLocaleString()}`;
         }
 
         // Funciones de utilidad
         function getStatusText(status) {
             const statusTexts = {
                 pending: 'Pendiente',
+                confirmed: 'Confirmado',
                 preparing: 'Preparando',
                 ready: 'Listo',
                 delivered: 'Entregado',
                 cancelled: 'Cancelado'
             };
             return statusTexts[status] || status;
+        }
+
+        function getPaymentMethodText(method) {
+            const methodTexts = {
+                cash: 'Efectivo',
+                card: 'Tarjeta',
+                transfer: 'Transferencia'
+            };
+            return methodTexts[method] || method || 'No especificado';
         }
 
         function getEmptyMessage() {
@@ -787,7 +944,7 @@ Escribe el número:
                 <div class="empty-state">
                     <h3>Error</h3>
                     <p>${message}</p>
-                    <button class="btn btn-primary" onclick="loadOrders()">Reintentar</button>
+                    <button class="btn btn-primary" onclick="loadOrders(${currentPage})">Reintentar</button>
                 </div>
             `;
         }

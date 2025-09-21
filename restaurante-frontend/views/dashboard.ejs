@@ -326,43 +326,117 @@
             }, 3000);
         }
 
-        // Cargar datos del dashboard
-        async function loadDashboardData() {
-            const user = appUtils.getCurrentUser();
+       // Cargar datos del dashboard
+async function loadDashboardData() {
+    const user = appUtils.getCurrentUser();
+    
+    if (user) {
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userRole').textContent = user.role.toUpperCase();
+        document.getElementById('userRoleDisplay').textContent = user.role.toUpperCase();
+    }
+
+    // Cargar estadísticas con mejor manejo de errores
+    await loadStats();
+}
+
+// Nueva función separada para cargar estadísticas
+async function loadStats() {
+    try {
+        console.log('Cargando estadísticas del dashboard...');
+        
+        // Cargar productos - CORREGIDO
+        try {
+            console.log('Cargando productos...');
+            const productsResponse = await appUtils.getProducts();
+            console.log('Respuesta productos:', productsResponse);
             
-            if (user) {
-                document.getElementById('userName').textContent = user.name;
-                document.getElementById('userRole').textContent = user.role.toUpperCase();
-                document.getElementById('userRoleDisplay').textContent = user.role.toUpperCase();
+            if (productsResponse && productsResponse.success) {
+                // Tu API devuelve directamente el array en data, no en data.pagination
+                let totalProducts = 0;
+                
+                if (Array.isArray(productsResponse.data)) {
+                    totalProducts = productsResponse.data.length;
+                } else if (productsResponse.data && productsResponse.data.pagination) {
+                    totalProducts = productsResponse.data.pagination.total;
+                } else if (productsResponse.data && typeof productsResponse.data === 'object') {
+                    totalProducts = Object.keys(productsResponse.data).length;
+                }
+                
+                document.getElementById('totalProducts').textContent = totalProducts;
+                console.log('Total productos:', totalProducts);
+            } else {
+                console.warn('No se pudieron cargar productos:', productsResponse);
+                document.getElementById('totalProducts').textContent = '0';
             }
-
-            // Cargar estadísticas
-            try {
-                // Solo empleados pueden ver estadísticas completas
-                if (user && ['admin', 'waiter', 'chef'].includes(user.role)) {
-                    const stats = await appUtils.apiRequest('/orders/stats/dashboard');
-                    if (stats.success) {
-                        document.getElementById('todayOrders').textContent = stats.data.today.totalOrders || 0;
-                    }
-                }
-
-                // Cargar productos (todos pueden ver)
-                const products = await appUtils.apiRequest('/products?limit=1');
-                if (products.success && products.pagination) {
-                    document.getElementById('totalProducts').textContent = products.pagination.total;
-                }
-
-                // Cargar categorías (todos pueden ver)
-                const categories = await appUtils.apiRequest('/categories');
-                if (categories.success) {
-                    document.getElementById('totalCategories').textContent = categories.data.length;
-                }
-
-            } catch (error) {
-                console.log('Error cargando estadísticas:', error.message);
-                // No mostrar error al usuario, solo no cargar las estadísticas
-            }
+        } catch (error) {
+            console.error('Error cargando productos:', error);
+            document.getElementById('totalProducts').textContent = '0';
         }
+
+        // Cargar categorías
+        try {
+            console.log('Cargando categorías...');
+            const categoriesResponse = await appUtils.getCategories();
+            console.log('Respuesta categorías:', categoriesResponse);
+            
+            if (categoriesResponse && categoriesResponse.success && categoriesResponse.data) {
+                const totalCategories = Array.isArray(categoriesResponse.data) 
+                    ? categoriesResponse.data.length 
+                    : 0;
+                document.getElementById('totalCategories').textContent = totalCategories;
+                console.log('Total categorías:', totalCategories);
+            } else {
+                console.warn('No se pudieron cargar categorías:', categoriesResponse);
+                document.getElementById('totalCategories').textContent = '0';
+            }
+        } catch (error) {
+            console.error('Error cargando categorías:', error);
+            document.getElementById('totalCategories').textContent = '0';
+        }
+
+        // Cargar pedidos - CORREGIDO
+        try {
+            console.log('Cargando pedidos...');
+            const ordersResponse = await appUtils.getOrders({ limit: '1' });
+            console.log('Respuesta pedidos:', ordersResponse);
+            
+            if (ordersResponse && ordersResponse.success) {
+                let totalOrders = 0;
+                
+                // Verificar diferentes estructuras de respuesta
+                if (ordersResponse.data && ordersResponse.data.pagination) {
+                    totalOrders = ordersResponse.data.pagination.total;
+                } else if (ordersResponse.data && Array.isArray(ordersResponse.data)) {
+                    totalOrders = ordersResponse.data.length;
+                } else if (ordersResponse.data && ordersResponse.data.orders && Array.isArray(ordersResponse.data.orders)) {
+                    totalOrders = ordersResponse.data.orders.length;
+                }
+                
+                document.getElementById('todayOrders').textContent = totalOrders;
+                console.log('Total pedidos:', totalOrders);
+            } else {
+                console.warn('No se pudieron cargar pedidos:', ordersResponse);
+                document.getElementById('todayOrders').textContent = '0';
+            }
+        } catch (error) {
+            console.error('Error cargando pedidos:', error);
+            document.getElementById('todayOrders').textContent = '0';
+        }
+
+        console.log('Estadísticas cargadas completamente');
+        
+    } catch (error) {
+        console.error('Error general cargando estadísticas:', error);
+        
+        // Valores por defecto en caso de error total
+        document.getElementById('totalProducts').textContent = '0';
+        document.getElementById('totalCategories').textContent = '0';
+        document.getElementById('todayOrders').textContent = '0';
+        
+        showAlert('Error cargando algunas estadísticas', 'error');
+    }
+}
 
         // Configurar acceso basado en roles
         function setupRoleBasedAccess() {

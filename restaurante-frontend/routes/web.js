@@ -44,6 +44,13 @@ router.get('/products', requireAuth, (req, res) => {
     user: null
   });
 });
+// Ruta para crear nuevo pedido
+router.get('/orders/new', requireAuth, (req, res) => {
+  res.render('order-form', { 
+    title: 'Nuevo Pedido',
+    user: null
+  });
+});
 
 // Ruta de pedidos
 router.get('/orders', requireAuth, (req, res) => {
