@@ -3,342 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - Restaurante</title>
+    <title>Gestión de Pedidos - Restaurante</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
-        .orders-body {
-            background: #f8f9fa;
-            min-height: 100vh;
-            padding: 0;
-        }
-
-        .orders-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .header-title {
-            margin: 0;
-            font-size: 2rem;
-            font-weight: 300;
-        }
-
-        .header-stats {
-            display: flex;
-            gap: 20px;
-            font-size: 0.9rem;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: bold;
-            display: block;
-        }
-
-        .main-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 30px 20px;
-        }
-
-        .controls-section {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .controls-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .search-input, .filter-select {
-            padding: 12px 15px;
-            border: 2px solid #e1e5e9;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
-
-        .search-input:focus, .filter-select:focus {
-            border-color: #667eea;
-            outline: none;
-        }
-
-        .orders-list {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .order-card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .order-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-
-        .order-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            display: grid;
-            grid-template-columns: auto 1fr auto auto;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .order-id {
-            font-weight: bold;
-            color: #333;
-        }
-
-        .order-customer {
-            color: #666;
-        }
-
-        .order-status {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-align: center;
-            min-width: 100px;
-        }
-
+        .orders-body { background: #f8f9fa; min-height: 100vh; }
+        .orders-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .header-stats { display: flex; gap: 20px; font-size: 0.9rem; text-align: center; }
+        .stat-number { font-size: 1.5rem; font-weight: bold; display: block; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
+        .controls-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: center; }
+        .search-input, .filter-select { padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 1rem; }
+        .orders-list { display: flex; flex-direction: column; gap: 20px; }
+        .order-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
+        .order-header { padding: 20px; border-bottom: 1px solid #eee; display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center; }
+        .order-id { font-weight: bold; color: #333; }
+        .order-status { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 500; text-align: center; min-width: 100px; }
         .status-pending { background: #fff3cd; color: #856404; }
         .status-confirmed { background: #d1ecf1; color: #0c5460; }
         .status-preparing { background: #d1ecf1; color: #0c5460; }
         .status-ready { background: #d4edda; color: #155724; }
         .status-delivered { background: #e2e3e5; color: #383d41; }
         .status-cancelled { background: #f8d7da; color: #721c24; }
-
-        .order-total {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .order-content {
-            padding: 20px;
-        }
-
-        .order-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .info-label {
-            font-size: 0.8rem;
-            color: #666;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-value {
-            font-weight: 500;
-            color: #333;
-        }
-
-        .order-items {
-            margin-top: 15px;
-        }
-
-        .order-items h4 {
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        .item-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .order-item:last-child {
-            border-bottom: none;
-        }
-
-        .item-name {
-            font-weight: 500;
-        }
-
-        .item-details {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        .item-price {
-            font-weight: 500;
-            color: #667eea;
-        }
-
-        .order-actions {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-            margin-top: 20px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-
-        .btn-small {
-            padding: 8px 15px;
-            font-size: 0.85rem;
-            border-radius: 6px;
-        }
-
-        .loading-spinner {
-            text-align: center;
-            padding: 40px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .empty-state h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 30px;
-            padding: 20px;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .pagination button {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .pagination button:hover:not(:disabled) {
-            background: #f8f9fa;
-            border-color: #667eea;
-        }
-
-        .pagination button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .pagination button.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-
-        .pagination-info {
-            font-size: 0.9rem;
-            color: #666;
-        }
-
-        @media (max-width: 768px) {
-            .controls-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .order-header {
-                grid-template-columns: 1fr;
-                gap: 10px;
-                text-align: center;
-            }
-
-            .order-info {
-                grid-template-columns: 1fr;
-            }
-
-            .header-content {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-
-            .header-stats {
-                justify-content: center;
-            }
+        .order-content { padding: 20px; }
+        .order-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .info-label { font-size: 0.8rem; color: #666; text-transform: uppercase; }
+        .info-value { font-weight: 500; color: #333; }
+        .order-items h4 { margin-bottom: 10px; color: #333; }
+        .order-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+        .order-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; }
+        .btn-small { padding: 8px 15px; font-size: 0.85rem; border-radius: 6px; }
+        .loading-spinner, .empty-state { text-align: center; padding: 40px; color: #666; }
+        .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; padding: 20px; background: white; border-radius: 12px; }
+        @media (max-width: 768px) { 
+            .controls-grid { grid-template-columns: 1fr; }
+            .order-header { grid-template-columns: 1fr; text-align: center; }
+            .order-info { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body class="orders-body">
     <div class="orders-header">
         <div class="header-content">
-            <h1 class="header-title">Gestión de Pedidos</h1>
+            <h1>Gestión de Pedidos</h1>
             <div class="header-stats">
-                <div class="stat-item">
-                    <span class="stat-number" id="totalOrders">0</span>
-                    <span>Total</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="pendingOrders">0</span>
-                    <span>Pendientes</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number" id="todayRevenue">$0</span>
-                    <span>Hoy</span>
-                </div>
+                <div><span class="stat-number" id="totalOrders">0</span>Total</div>
+                <div><span class="stat-number" id="pendingOrders">0</span>Pendientes</div>
             </div>
-            <button class="btn btn-secondary btn-small" data-action="go-back">← Volver</button>
+            <button class="btn btn-secondary btn-small" onclick="goBack()">← Volver</button>
         </div>
     </div>
 
     <div class="main-content">
-        <!-- Controles de búsqueda y filtros -->
         <div class="controls-section">
             <div class="controls-grid">
                 <input type="text" class="search-input" id="searchInput" placeholder="Buscar por mesa...">
-                
                 <select class="filter-select" id="statusFilter">
                     <option value="">Todos los estados</option>
                     <option value="pending">Pendiente</option>
@@ -348,32 +68,20 @@
                     <option value="delivered">Entregado</option>
                     <option value="cancelled">Cancelado</option>
                 </select>
-
                 <select class="filter-select" id="tableFilter">
                     <option value="">Todas las mesas</option>
-                    <option value="1">Mesa 1</option>
-                    <option value="2">Mesa 2</option>
-                    <option value="3">Mesa 3</option>
-                    <option value="4">Mesa 4</option>
-                    <option value="5">Mesa 5</option>
-                    <option value="6">Mesa 6</option>
-                    <option value="7">Mesa 7</option>
-                    <option value="8">Mesa 8</option>
+                    <% for(let i = 1; i <= 8; i++) { %>
+                    <option value="<%= i %>">Mesa <%= i %></option>
+                    <% } %>
                 </select>
-
-                <button class="btn btn-primary btn-small" id="refreshBtn">🔄 Actualizar</button>
+                <button class="btn btn-primary btn-small" onclick="loadOrders()">🔄 Actualizar</button>
             </div>
         </div>
 
-        <!-- Lista de pedidos -->
         <div id="ordersContainer">
-            <div class="loading-spinner">
-                <div class="spinner"></div>
-                <p>Cargando pedidos...</p>
-            </div>
+            <div class="loading-spinner">Cargando pedidos...</div>
         </div>
 
-        <!-- Paginación -->
         <div id="paginationContainer"></div>
     </div>
 
@@ -382,530 +90,163 @@
         let orders = [];
         let currentPage = 1;
         let totalPages = 1;
-        let isLoading = false;
 
-        document.addEventListener('DOMContentLoaded', async function() {
-            const currentUser = appUtils.getCurrentUser();
-            if (!currentUser) {
-                window.location.href = '/login';
-                return;
-            }
-
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!appUtils.getCurrentUser()) return window.location.href = '/login';
             await loadOrders();
             setupEventListeners();
-            setupRoleBasedAccess();
         });
 
-        // Configurar acceso basado en roles
-        function setupRoleBasedAccess() {
-            const currentUser = appUtils.getCurrentUser();
-            const headerTitle = document.querySelector('.header-title');
-            
-            switch(currentUser.role) {
-                case 'customer':
-                    headerTitle.textContent = 'Mis Pedidos';
-                    // Ocultar filtro de mesa para clientes
-                    document.getElementById('tableFilter').style.display = 'none';
-                    break;
-                case 'chef':
-                    headerTitle.textContent = 'Pedidos de Cocina';
-                    break;
-                case 'waiter':
-                    headerTitle.textContent = 'Pedidos del Restaurante';
-                    break;
-                case 'admin':
-                    headerTitle.textContent = 'Gestión de Pedidos';
-                    break;
-            }
-        }
-
-        // Cargar pedidos desde la API
         async function loadOrders(page = 1) {
-            if (isLoading) return;
-            
             try {
-                isLoading = true;
-                showLoadingSpinner();
-
+                showLoading();
+                const filters = { page: page.toString(), limit: '10' };
                 const status = document.getElementById('statusFilter').value;
                 const tableNumber = document.getElementById('tableFilter').value;
-
-                // Construir parámetros de consulta
-                const filters = {
-                    page: page.toString(),
-                    limit: '10'
-                };
-
+                
                 if (status) filters.status = status;
                 if (tableNumber) filters.tableNumber = tableNumber;
 
                 const response = await appUtils.getOrders(filters);
-                
                 if (response.success) {
                     orders = response.data.orders;
                     currentPage = response.data.pagination.page;
                     totalPages = response.data.pagination.pages;
-                    
                     renderOrders();
                     renderPagination();
                     updateStats();
-                } else {
-                    showError('Error al cargar pedidos: ' + response.message);
                 }
-                
             } catch (error) {
-                console.error('Error cargando pedidos:', error);
                 showError('Error al cargar pedidos: ' + error.message);
-            } finally {
-                isLoading = false;
             }
         }
 
-        // Mostrar spinner de carga
-        function showLoadingSpinner() {
-            document.getElementById('ordersContainer').innerHTML = `
-                <div class="loading-spinner">
-                    <div class="spinner"></div>
-                    <p>Cargando pedidos...</p>
-                </div>
-            `;
+        function showLoading() {
+            document.getElementById('ordersContainer').innerHTML = '<div class="loading-spinner">Cargando pedidos...</div>';
         }
 
-        // Renderizar pedidos
         function renderOrders() {
             const container = document.getElementById('ordersContainer');
-            
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No se encontraron pedidos</h3>
-                        <p>${getEmptyMessage()}</p>
-                    </div>
-                `;
+            if (!orders.length) {
+                container.innerHTML = '<div class="empty-state"><h3>No se encontraron pedidos</h3></div>';
                 return;
             }
 
             const list = document.createElement('div');
             list.className = 'orders-list';
-
-            orders.forEach(order => {
-                const card = createOrderCard(order);
-                list.appendChild(card);
-            });
-
+            orders.forEach(order => list.appendChild(createOrderCard(order)));
             container.innerHTML = '';
             container.appendChild(list);
         }
 
-        // Crear tarjeta de pedido
         function createOrderCard(order) {
             const div = document.createElement('div');
             div.className = 'order-card';
             
             const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
-            const orderTime = new Date(order.createdAt).toLocaleTimeString('es-ES', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
-            });
+            const orderTime = new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 
             div.innerHTML = `
                 <div class="order-header">
                     <div class="order-id">${order.orderNumber || '#' + order._id.slice(-6).toUpperCase()}</div>
-                    <div class="order-customer">Mesa ${order.tableNumber}</div>
+                    <div>Mesa ${order.tableNumber}</div>
                     <div class="order-status status-${order.status}">${getStatusText(order.status)}</div>
-                    <div class="order-total">$${order.total?.toLocaleString() || '0'}</div>
                 </div>
-                
                 <div class="order-content">
                     <div class="order-info">
-                        <div class="info-item">
-                            <span class="info-label">Fecha</span>
-                            <span class="info-value">${orderDate}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Hora</span>
-                            <span class="info-value">${orderTime}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Método de pago</span>
-                            <span class="info-value">${getPaymentMethodText(order.paymentMethod)}</span>
-                        </div>
+                        <div><span class="info-label">Fecha</span><br><span class="info-value">${orderDate}</span></div>
+                        <div><span class="info-label">Hora</span><br><span class="info-value">${orderTime}</span></div>
+                        <div><span class="info-label">Pago</span><br><span class="info-value">${getPaymentMethodText(order.paymentMethod)}</span></div>
                     </div>
-
-                    ${order.notes ? `
-                        <div class="order-info">
-                            <div class="info-item" style="grid-column: 1 / -1;">
-                                <span class="info-label">Notas</span>
-                                <span class="info-value">${order.notes}</span>
-                            </div>
-                        </div>
-                    ` : ''}
-
+                    ${order.notes ? `<div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Notas:</strong> ${order.notes}</div>` : ''}
                     <div class="order-items">
                         <h4>Productos (${order.items?.length || 0})</h4>
-                        <div class="item-list">
-                            ${(order.items || []).map(item => `
-                                <div class="order-item">
-                                    <div>
-                                        <div class="item-name">${item.product?.name || 'Producto desconocido'}</div>
-                                        <div class="item-details">
-                                            Cantidad: ${item.quantity}
-                                            ${item.specialInstructions ? `<br><em>Instrucciones: ${item.specialInstructions}</em>` : ''}
-                                        </div>
-                                    </div>
-                                    <div class="item-price">$${((item.price || 0) * item.quantity).toLocaleString()}</div>
+                        ${(order.items || []).map(item => `
+                            <div class="order-item">
+                                <div>
+                                    <div style="font-weight: 500;">${item.product?.name || 'Producto'}</div>
+                                    <div style="font-size: 0.9rem; color: #666;">Cantidad: ${item.quantity}${item.specialInstructions ? ` • ${item.specialInstructions}` : ''}</div>
                                 </div>
-                            `).join('')}
-                        </div>
+                            </div>
+                        `).join('')}
                     </div>
-
                     <div class="order-actions">
-                        <button class="btn btn-secondary btn-small" data-action="view-order" data-id="${order._id}">
-                            Ver Detalle
-                        </button>
                         ${getActionButtons(order)}
                     </div>
                 </div>
             `;
-            
             return div;
         }
 
-// Reemplaza la función getActionButtons en tu orders.ejs con esta versión que incluye edición:
-
-function getActionButtons(order) {
-    const currentUser = appUtils.getCurrentUser();
-    const buttons = [];
-    
-    
-    
-    // Botón de editar (solo para pedidos que se pueden modificar)
-    const canEdit = ['admin', 'waiter'].includes(currentUser.role) && 
-                   ['pending', 'confirmed'].includes(order.status);
-    
-    if (canEdit) {
-        buttons.push(`
-            <button class="btn btn-primary btn-small" data-action="edit-order" data-id="${order._id}" style="background-color: #ffc107; border-color: #ffc107; color: #212529;">
-                Editar
-            </button>
-        `);
-    }
-    
-    // Botones de cambio de estado
-    if (['admin', 'waiter', 'chef'].includes(currentUser.role)) {
-        if (order.status === 'pending' && ['admin', 'waiter'].includes(currentUser.role)) {
-            buttons.push(`
-                <button class="btn btn-primary btn-small" data-action="confirm-order" data-id="${order._id}">
-                    Confirmar
-                </button>
-            `);
-        }
-        
-        if (order.status === 'confirmed' && ['chef', 'admin'].includes(currentUser.role)) {
-            buttons.push(`
-                <button class="btn btn-primary btn-small" data-action="start-preparing" data-id="${order._id}">
-                    Iniciar Preparación
-                </button>
-            `);
-        }
-        
-        if (order.status === 'preparing' && ['chef', 'admin'].includes(currentUser.role)) {
-            buttons.push(`
-                <button class="btn btn-primary btn-small" data-action="mark-ready" data-id="${order._id}">
-                    Marcar Listo
-                </button>
-            `);
-        }
-        
-        if (order.status === 'ready' && ['waiter', 'admin'].includes(currentUser.role)) {
-            buttons.push(`
-                <button class="btn btn-primary btn-small" data-action="mark-delivered" data-id="${order._id}">
-                    Marcar Entregado
-                </button>
-            `);
-        }
-        
-        // Solo admin puede cancelar pedidos
-        if (currentUser.role === 'admin' && !['delivered', 'cancelled'].includes(order.status)) {
-            buttons.push(`
-                <button class="btn btn-secondary btn-small" data-action="cancel-order" data-id="${order._id}">
-                    Cancelar
-                </button>
-            `);
+        function getActionButtons(order) {
+            const user = appUtils.getCurrentUser();
+            const buttons = [];
+            
+            // Botón ver detalles (para todos los usuarios)
+            buttons.push(`<button class="btn btn-secondary btn-small" onclick="viewOrder('${order._id}')">Ver Detalle</button>`);
+            
+            // Botón editar (para admin y waiter)
+            if (['admin', 'waiter'].includes(user.role)) {
+                buttons.push(`<button class="btn btn-primary btn-small" onclick="editOrder('${order._id}')" style="background: #ffc107; color: #212529;">Editar</button>`);
+            }
+            
+            // Botón eliminar (solo para admin)
+            if (user.role === 'admin') {
+                buttons.push(`<button class="btn btn-secondary btn-small" onclick="deleteOrder('${order._id}')" style="background: #dc3545;">Eliminar</button>`);
+            }
+            
+            return buttons.join('');
         }
 
-        // Solo admin puede eliminar pedidos pendientes o cancelados
-        if (currentUser.role === 'admin' && ['pending', 'cancelled'].includes(order.status)) {
-            buttons.push(`
-                <button class="btn btn-secondary btn-small" data-action="delete-order" data-id="${order._id}" style="background-color: #dc3545; color: white;">
-                    Eliminar
-                </button>
-            `);
-        }
-    }
-    
-    return buttons.join('');
-}
-
-        // Renderizar paginación
         function renderPagination() {
             const container = document.getElementById('paginationContainer');
+            if (totalPages <= 1) return container.innerHTML = '';
             
-            if (totalPages <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
-            const pagination = document.createElement('div');
-            pagination.className = 'pagination';
-
-            // Botón anterior
-            pagination.innerHTML = `
-                <button ${currentPage === 1 ? 'disabled' : ''} data-page="${currentPage - 1}">
-                    ← Anterior
-                </button>
-                
-                <div class="pagination-info">
-                    Página ${currentPage} de ${totalPages}
+            container.innerHTML = `
+                <div class="pagination">
+                    <button ${currentPage === 1 ? 'disabled' : ''} onclick="loadOrders(${currentPage - 1})">← Anterior</button>
+                    <span>Página ${currentPage} de ${totalPages}</span>
+                    <button ${currentPage === totalPages ? 'disabled' : ''} onclick="loadOrders(${currentPage + 1})">Siguiente →</button>
                 </div>
-                
-                <button ${currentPage === totalPages ? 'disabled' : ''} data-page="${currentPage + 1}">
-                    Siguiente →
-                </button>
             `;
-
-            container.innerHTML = '';
-            container.appendChild(pagination);
         }
 
-        // Event listeners
         function setupEventListeners() {
-            // Filtros con debounce para búsqueda
-            document.getElementById('searchInput').addEventListener('input', debounce(() => {
-                currentPage = 1;
-                loadOrders(1);
-            }, 500));
-            
-            document.getElementById('statusFilter').addEventListener('change', () => {
-                currentPage = 1;
-                loadOrders(1);
-            });
-            
-            document.getElementById('tableFilter').addEventListener('change', () => {
-                currentPage = 1;
-                loadOrders(1);
-            });
-            
-            document.getElementById('refreshBtn').addEventListener('click', () => {
-                loadOrders(currentPage);
-            });
-            
-            // Delegación de eventos para acciones
-            document.addEventListener('click', function(e) {
-                const action = e.target.getAttribute('data-action');
-                const orderId = e.target.getAttribute('data-id');
-                const page = e.target.getAttribute('data-page');
-                
-                if (action && orderId) {
-                    handleOrderAction(action, orderId);
-                } else if (page) {
-                    loadOrders(parseInt(page));
-                } else if (action === 'go-back') {
-                    goBack();
-                }
-            });
+            document.getElementById('searchInput').addEventListener('input', debounce(() => loadOrders(1), 500));
+            document.getElementById('statusFilter').addEventListener('change', () => loadOrders(1));
+            document.getElementById('tableFilter').addEventListener('change', () => loadOrders(1));
         }
 
-        async function handleOrderAction(action, orderId) {
-    const order = orders.find(o => o._id === orderId);
-    if (!order) {
-        console.error('Pedido no encontrado:', orderId);
-        return;
-    }
-
-    try {
-        let newStatus = null;
-        let confirmMessage = '';
-
-        switch(action) {
-            case 'view-order':
-                await viewOrderDetail(orderId);
-                return;
-                
-            case 'edit-order':
-                // NUEVA FUNCIONALIDAD DE EDICIÓN
-                console.log('Editando pedido:', orderId);
-                handleEditOrder(orderId);
-                return;
-                
-            case 'confirm-order':
-                newStatus = 'confirmed';
-                confirmMessage = '¿Confirmar este pedido?';
-                break;
-                
-            case 'start-preparing':
-                newStatus = 'preparing';
-                confirmMessage = '¿Iniciar preparación de este pedido?';
-                break;
-                
-            case 'mark-ready':
-                newStatus = 'ready';
-                confirmMessage = '¿Marcar este pedido como listo?';
-                break;
-                
-            case 'mark-delivered':
-                newStatus = 'delivered';
-                confirmMessage = '¿Marcar este pedido como entregado?';
-                break;
-                
-            case 'cancel-order':
-                newStatus = 'cancelled';
-                confirmMessage = '¿Estás seguro de cancelar este pedido?';
-                break;
-
-            case 'delete-order':
-                if (confirm('¿Estás seguro de eliminar este pedido? Esta acción no se puede deshacer.')) {
-                    await deleteOrder(orderId);
-                }
-                return;
-                
-            default:
-                console.error('Acción no reconocida:', action);
-                return;
+        function editOrder(orderId) {
+            window.location.href = `/orders/edit/${orderId}`;
         }
 
-        if (newStatus && confirm(confirmMessage)) {
-            await updateOrderStatus(orderId, newStatus);
+        async function updateStatus(orderId, newStatus) {
+            // Función eliminada - no se necesita para la funcionalidad básica
         }
 
-    } catch (error) {
-        console.error('Error en handleOrderAction:', error);
-        appUtils.showAlert('ordersContainer', 'Error: ' + error.message, 'error');
-    }
-}
-// NUEVA FUNCIÓN para manejar la edición
-function handleEditOrder(orderId) {
-    if (!orderId) {
-        console.error('ID de pedido inválido');
-        appUtils.showAlert('ordersContainer', 'Error: ID de pedido inválido', 'error');
-        return;
-    }
-    
-    // Verificar permisos del usuario
-    const currentUser = appUtils.getCurrentUser();
-    if (!currentUser) {
-        appUtils.showAlert('ordersContainer', 'Debe iniciar sesión para editar pedidos', 'error');
-        window.location.href = '/login';
-        return;
-    }
-    
-    // Verificar si el usuario puede editar pedidos
-    if (!['admin', 'waiter'].includes(currentUser.role)) {
-        appUtils.showAlert('ordersContainer', 'No tiene permisos para editar pedidos', 'error');
-        return;
-    }
-    
-    // Verificar que el pedido se puede editar
-    const order = orders.find(o => o._id === orderId);
-    if (order && !['pending', 'confirmed'].includes(order.status)) {
-        appUtils.showAlert('ordersContainer', 
-            'Solo se pueden editar pedidos pendientes o confirmados', 'error');
-        return;
-    }
-    
-    // Navegar a la página de edición
-    try {
-        console.log('Navegando a editar pedido:', orderId);
-        window.location.href = `/orders/edit/${orderId}`;
-    } catch (error) {
-        console.error('Error navegando a edición:', error);
-        appUtils.showAlert('ordersContainer', 'Error al abrir el editor de pedidos', 'error');
-    }
-}
-
-        // Actualizar estado del pedido
-        async function updateOrderStatus(orderId, newStatus) {
-            try {
-                const response = await appUtils.updateOrderStatus(orderId, newStatus);
-
-                if (response.success) {
-                    appUtils.showAlert('ordersContainer', `Estado actualizado a: ${getStatusText(newStatus)}`, 'success');
-                    await loadOrders(currentPage);
-                } else {
-                    throw new Error(response.message);
-                }
-            } catch (error) {
-                console.error('Error actualizando estado:', error);
-                appUtils.showAlert('ordersContainer', 'Error actualizando estado: ' + error.message, 'error');
-            }
-        }
-
-        // Eliminar pedido
         async function deleteOrder(orderId) {
+            if (!confirm('¿Eliminar este pedido? Esta acción no se puede deshacer.')) return;
+            
             try {
                 const response = await appUtils.deleteOrder(orderId);
-
                 if (response.success) {
-                    appUtils.showAlert('ordersContainer', 'Pedido eliminado correctamente', 'success');
+                    showMessage('Pedido eliminado', false);
                     await loadOrders(currentPage);
-                } else {
-                    throw new Error(response.message);
                 }
             } catch (error) {
-                console.error('Error eliminando pedido:', error);
-                appUtils.showAlert('ordersContainer', 'Error eliminando pedido: ' + error.message, 'error');
+                showMessage('Error eliminando pedido: ' + error.message);
             }
         }
 
-        // Ver detalle del pedido
-        async function viewOrderDetail(orderId) {
-            try {
-                const response = await appUtils.getOrderById(orderId);
-                
-                if (response.success) {
-                    const order = response.data;
-                    const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
-                    const items = (order.items || []).map(item => 
-                        `• ${item.product?.name || 'Producto'} x${item.quantity} - ${((item.price || 0) * item.quantity).toLocaleString()}${item.specialInstructions ? `\n  Instrucciones: ${item.specialInstructions}` : ''}`
-                    ).join('\n');
-
-                    alert(`
-DETALLE DEL PEDIDO ${order.orderNumber || '#' + order._id.slice(-6).toUpperCase()}
-
-Mesa: ${order.tableNumber}
-Fecha: ${orderDate}
-Estado: ${getStatusText(order.status)}
-Método de pago: ${getPaymentMethodText(order.paymentMethod)}
-${order.notes ? `Notas: ${order.notes}` : ''}
-
-PRODUCTOS:
-${items}
-
-TOTAL: ${(order.total || 0).toLocaleString()}
-                    `.trim());
-                } else {
-                    throw new Error(response.message);
-                }
-            } catch (error) {
-                console.error('Error obteniendo detalle:', error);
-                appUtils.showAlert('ordersContainer', 'Error obteniendo detalle: ' + error.message, 'error');
-            }
-        }
-
-        // Actualizar estadísticas
-        function updateStats() {
+        async function updateStats() {
             const total = orders.length;
             const pending = orders.filter(o => o.status === 'pending').length;
-            const todayTotal = orders
-                .filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString())
-                .reduce((sum, o) => sum + (o.total || 0), 0);
-
+            
             document.getElementById('totalOrders').textContent = total;
             document.getElementById('pendingOrders').textContent = pending;
-            document.getElementById('todayRevenue').textContent = `$${todayTotal.toLocaleString()}`;
         }
 
-        // Funciones de utilidad
         function getStatusText(status) {
             const statusTexts = {
                 pending: 'Pendiente',
@@ -927,26 +268,27 @@ TOTAL: ${(order.total || 0).toLocaleString()}
             return methodTexts[method] || method || 'No especificado';
         }
 
-        function getEmptyMessage() {
-            const currentUser = appUtils.getCurrentUser();
-            switch(currentUser.role) {
-                case 'customer':
-                    return 'No has realizado ningún pedido aún.';
-                case 'chef':
-                    return 'No hay pedidos pendientes en cocina.';
-                default:
-                    return 'No hay pedidos que coincidan con los filtros seleccionados.';
-            }
-        }
-
         function showError(message) {
             document.getElementById('ordersContainer').innerHTML = `
                 <div class="empty-state">
                     <h3>Error</h3>
                     <p>${message}</p>
-                    <button class="btn btn-primary" onclick="loadOrders(${currentPage})">Reintentar</button>
+                    <button class="btn btn-primary" onclick="loadOrders()">Reintentar</button>
                 </div>
             `;
+        }
+
+        function showMessage(message, isError = true) {
+            const alertDiv = document.createElement('div');
+            alertDiv.style.cssText = `
+                position: fixed; top: 20px; right: 20px; padding: 15px 20px; border-radius: 8px; z-index: 10000;
+                background: ${isError ? '#f8d7da' : '#d4edda'}; 
+                color: ${isError ? '#721c24' : '#155724'}; 
+                border: 1px solid ${isError ? '#f5c6cb' : '#c3e6cb'};
+            `;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            setTimeout(() => alertDiv.remove(), 3000);
         }
 
         function goBack() {
@@ -955,13 +297,9 @@ TOTAL: ${(order.total || 0).toLocaleString()}
 
         function debounce(func, wait) {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+            return function(...args) {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
     </script>

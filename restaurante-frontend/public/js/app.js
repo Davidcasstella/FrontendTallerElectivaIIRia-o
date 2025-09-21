@@ -289,14 +289,56 @@ async function getOrderById(orderId) {
 // Crear nuevo pedido
 async function createOrder(orderData) {
     try {
+        // ✅ ASEGURAR QUE EL TOTAL ESTÉ CORRECTAMENTE CALCULADO
+        if (!orderData.total || orderData.total === 0) {
+            const calculatedTotal = orderData.items.reduce((sum, item) => {
+                const itemPrice = parseFloat(item.price) || 0;
+                const itemQuantity = parseInt(item.quantity) || 1;
+                return sum + (itemPrice * itemQuantity);
+            }, 0);
+            
+            orderData.total = calculatedTotal;
+            console.log('Total calculado automáticamente:', calculatedTotal);
+        }
+        
+        console.log('Creando pedido con datos:', orderData);
+        
         const response = await apiRequest('/orders', 'POST', orderData);
+        console.log('Respuesta de creación:', response);
+        
         return response;
     } catch (error) {
         console.error('Error creando pedido:', error);
         throw error;
     }
 }
-
+// FUNCIÓN ADICIONAL PARA DEBUGGING - Agregar esta función nueva:
+async function debugOrderTotal(orderId) {
+    try {
+        const response = await apiRequest(`/orders/${orderId}`);
+        if (response.success) {
+            const order = response.data;
+            console.log('=== DEBUG PEDIDO ===');
+            console.log('ID:', order._id);
+            console.log('Total guardado:', order.total);
+            console.log('Items:');
+            order.items.forEach((item, index) => {
+                console.log(`  ${index + 1}. ${item.product?.name || 'Producto'}`);
+                console.log(`     Cantidad: ${item.quantity}`);
+                console.log(`     Precio: $${item.price}`);
+                console.log(`     Subtotal: $${item.price * item.quantity}`);
+            });
+            
+            const calculatedTotal = order.items.reduce((sum, item) => 
+                sum + (parseFloat(item.price) * parseInt(item.quantity)), 0);
+            console.log('Total calculado:', calculatedTotal);
+            console.log('¿Coinciden?', order.total === calculatedTotal);
+            console.log('==================');
+        }
+    } catch (error) {
+        console.error('Error en debug:', error);
+    }
+}
 // Actualizar pedido completo
 async function updateOrder(orderId, orderData) {
     try {
@@ -308,28 +350,44 @@ async function updateOrder(orderId, orderData) {
     }
 }
 
-// Actualizar solo el estado de un pedido
+// Actualizar solo el estado de un pedido - VERSION CORREGIDA
 async function updateOrderStatus(orderId, newStatus) {
     try {
         // Primero obtener el pedido actual
         const currentOrder = await apiRequest(`/orders/${orderId}`);
         if (!currentOrder.success) throw new Error(currentOrder.message);
         
-        // Preparar datos para actualizar (manteniendo todo igual excepto el estado)
         const orderData = currentOrder.data;
+        console.log('Pedido actual obtenido:', orderData);
+        
+        // CORREGIDO: Incluir precios y calcular total
+        const items = orderData.items.map(item => ({
+            product: item.product._id || item.product,
+            quantity: item.quantity,
+            price: item.price || 0, // ✅ MANTENER EL PRECIO ORIGINAL
+            specialInstructions: item.specialInstructions || ''
+        }));
+        
+        // ✅ CALCULAR EL TOTAL CORRECTAMENTE
+        const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        
+        console.log('Items procesados:', items);
+        console.log('Total calculado:', total);
+        
         const updatedData = {
-            items: orderData.items.map(item => ({
-                product: item.product._id || item.product,
-                quantity: item.quantity,
-                specialInstructions: item.specialInstructions || ''
-            })),
+            items: items,
             tableNumber: orderData.tableNumber,
             notes: orderData.notes || '',
             paymentMethod: orderData.paymentMethod,
+            total: total, // ✅ INCLUIR EL TOTAL CALCULADO
             status: newStatus // Nuevo estado
         };
         
+        console.log('Datos a enviar para actualización:', updatedData);
+        
         const response = await apiRequest(`/orders/${orderId}`, 'PUT', updatedData);
+        console.log('Respuesta de actualización:', response);
+        
         return response;
     } catch (error) {
         console.error('Error actualizando estado del pedido:', error);

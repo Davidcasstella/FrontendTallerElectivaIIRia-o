@@ -44,7 +44,16 @@ router.get('/products', requireAuth, (req, res) => {
     user: null
   });
 });
-// Ruta para crear nuevo pedido
+
+// Ruta de pedidos
+router.get('/orders', requireAuth, (req, res) => {
+  res.render('orders', { 
+    title: 'Pedidos',
+    user: null
+  });
+});
+
+// Ruta para crear nuevo pedido (ambas versiones para compatibilidad)
 router.get('/orders/new', requireAuth, (req, res) => {
   res.render('order-form', { 
     title: 'Nuevo Pedido',
@@ -52,10 +61,18 @@ router.get('/orders/new', requireAuth, (req, res) => {
   });
 });
 
-// Ruta de pedidos
-router.get('/orders', requireAuth, (req, res) => {
-  res.render('orders', { 
-    title: 'Pedidos',
+router.get('/orders/create', requireAuth, (req, res) => {
+  res.render('order-form', { 
+    title: 'Crear Pedido',
+    user: null
+  });
+});
+
+// Ruta para editar pedido
+router.get('/orders/edit/:id', requireAuth, (req, res) => {
+  res.render('order-edit', { 
+    title: 'Editar Pedido',
+    orderId: req.params.id,
     user: null
   });
 });
