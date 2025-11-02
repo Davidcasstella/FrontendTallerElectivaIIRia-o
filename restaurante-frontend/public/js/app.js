@@ -1,39 +1,37 @@
-// Configuración de la API - APUNTAR AL BACKEND REAL
-const API_URL = 'https://tallerelevita2-1.onrender.com/api'; // Tu backend en la nube
-// const API_URL = 'http://localhost:3000/api'; // Si tu backend está local descomenta esta línea
 
-// Estado de la aplicación
+const API_URL = 'https://tallerelevita2-1.onrender.com/api'; 
+
+
 let currentUser = null;
 let authToken = localStorage.getItem('authToken');
 
-// Verificar autenticación al cargar cualquier página
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
-// Inicializar aplicación
+
 async function initializeApp() {
-    // Obtener información del usuario si existe
+   
     const storedUser = localStorage.getItem('currentUser');
     if (storedUser) {
         currentUser = JSON.parse(storedUser);
     }
 
-    // Verificar token si existe
+    
     if (authToken) {
         const isValid = await verifyToken();
         if (!isValid) {
-            // Token inválido, limpiar y redireccionar al login
+            
             clearAuthData();
             if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
                 window.location.href = '/login';
             }
         } else {
-            // Token válido, mostrar información del usuario donde corresponda
+            
             displayUserInfo();
         }
     } else {
-        // No hay token, redireccionar al login si estamos en página protegida
+        
         const publicPages = ['/login', '/register', '/'];
         if (!publicPages.includes(window.location.pathname)) {
             window.location.href = '/login';
@@ -64,7 +62,7 @@ function showAlert(elementId, message, type = 'error') {
     }, 5000);
 }
 
-// Crear alerta flotante
+
 function createFloatingAlert(message, type) {
     const alert = document.createElement('div');
     alert.className = `floating-alert alert-${type}`;
@@ -90,12 +88,12 @@ function createFloatingAlert(message, type) {
     
     document.body.appendChild(alert);
     
-    // Animar entrada
+
     setTimeout(() => {
         alert.style.transform = 'translateX(0)';
     }, 100);
     
-    // Animar salida y eliminar
+
     setTimeout(() => {
         alert.style.transform = 'translateX(100%)';
         setTimeout(() => {
@@ -106,7 +104,6 @@ function createFloatingAlert(message, type) {
     }, 4000);
 }
 
-// Función para hacer requests a la API
 async function apiRequest(endpoint, method = 'GET', data = null) {
     const options = {
         method,
@@ -115,7 +112,7 @@ async function apiRequest(endpoint, method = 'GET', data = null) {
         }
     };
 
-    // Agregar token si existe
+    
     if (authToken) {
         options.headers['Authorization'] = `Bearer ${authToken}`;
     }

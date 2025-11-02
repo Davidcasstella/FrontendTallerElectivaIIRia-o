@@ -1,19 +1,18 @@
 const express = require('express');
 const router = express.Router();
 
-// Middleware para verificar autenticación en rutas web
+
 const requireAuth = (req, res, next) => {
-  // En el cliente verificaremos el token con JavaScript
-  // Esta es solo la ruta, la lógica estará en el frontend
+
   next();
 };
 
-// Ruta principal - redirige al login
+
 router.get('/', (req, res) => {
   res.redirect('/login');
 });
 
-// Ruta de login
+
 router.get('/login', (req, res) => {
   res.render('login', { 
     title: 'Iniciar Sesión',
@@ -21,7 +20,7 @@ router.get('/login', (req, res) => {
   });
 });
 
-// Ruta de registro
+
 router.get('/register', (req, res) => {
   res.render('register', { 
     title: 'Registro',
@@ -29,15 +28,14 @@ router.get('/register', (req, res) => {
   });
 });
 
-// Ruta del dashboard (protegida)
 router.get('/dashboard', requireAuth, (req, res) => {
   res.render('dashboard', { 
     title: 'Dashboard',
-    user: null // Se llenará con JavaScript desde localStorage
+    user: null 
   });
 });
 
-// Ruta de productos
+
 router.get('/products', requireAuth, (req, res) => {
   res.render('products', { 
     title: 'Productos',
@@ -45,7 +43,6 @@ router.get('/products', requireAuth, (req, res) => {
   });
 });
 
-// Ruta de pedidos
 router.get('/orders', requireAuth, (req, res) => {
   res.render('orders', { 
     title: 'Pedidos',
@@ -53,7 +50,6 @@ router.get('/orders', requireAuth, (req, res) => {
   });
 });
 
-// Ruta para crear nuevo pedido (ambas versiones para compatibilidad)
 router.get('/orders/new', requireAuth, (req, res) => {
   res.render('order-form', { 
     title: 'Nuevo Pedido',
@@ -68,7 +64,7 @@ router.get('/orders/create', requireAuth, (req, res) => {
   });
 });
 
-// Ruta para editar pedido
+
 router.get('/orders/edit/:id', requireAuth, (req, res) => {
   res.render('order-edit', { 
     title: 'Editar Pedido',
