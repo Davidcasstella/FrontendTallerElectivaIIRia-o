@@ -13,7 +13,7 @@
         .stat-number { font-size: 1.5rem; font-weight: bold; display: block; }
         .main-content { max-width: 1200px; margin: 0 auto; padding: 30px 20px; }
         .controls-section { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: center; }
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 15px; align-items: center; }
         .search-input, .filter-select { padding: 12px 15px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 1rem; }
         .orders-list { display: flex; flex-direction: column; gap: 20px; }
         .order-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }
@@ -36,6 +36,10 @@
         .btn-small { padding: 8px 15px; font-size: 0.85rem; border-radius: 6px; }
         .loading-spinner, .empty-state { text-align: center; padding: 40px; color: #666; }
         .pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; padding: 20px; background: white; border-radius: 12px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-close { cursor: pointer; font-size: 1.5rem; color: #666; }
         @media (max-width: 768px) { 
             .controls-grid { grid-template-columns: 1fr; }
             .order-header { grid-template-columns: 1fr; text-align: center; }
@@ -75,6 +79,7 @@
                     <% } %>
                 </select>
                 <button class="btn btn-primary btn-small" onclick="loadOrders()">🔄 Actualizar</button>
+                <button class="btn btn-primary btn-small" onclick="newOrder()">+ Nuevo Pedido</button>
             </div>
         </div>
 
@@ -83,6 +88,17 @@
         </div>
 
         <div id="paginationContainer"></div>
+    </div>
+
+    <!-- Modal para ver detalle -->
+    <div id="orderModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalOrderNumber">Detalle del Pedido</h2>
+                <span class="modal-close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="modalBody"></div>
+        </div>
     </div>
 
     <script src="/js/dist/app.js"></script>
@@ -108,13 +124,16 @@
                 if (tableNumber) filters.tableNumber = tableNumber;
 
                 const response = await appUtils.getOrders(filters);
-                if (response.success) {
-                    orders = response.data.orders;
-                    currentPage = response.data.pagination.page;
-                    totalPages = response.data.pagination.pages;
+                if (response.success && response.data) {
+                    orders = response.data.orders || [];
+                    const pagination = response.data.pagination || { page: 1, pages: 1 };
+                    currentPage = pagination.page;
+                    totalPages = pagination.pages;
                     renderOrders();
                     renderPagination();
                     updateStats();
+                } else {
+                    showError('No se pudieron cargar los pedidos');
                 }
             } catch (error) {
                 showError('Error al cargar pedidos: ' + error.message);
@@ -127,7 +146,7 @@
 
         function renderOrders() {
             const container = document.getElementById('ordersContainer');
-            if (!orders.length) {
+            if (!orders || orders.length === 0) {
                 container.innerHTML = '<div class="empty-state"><h3>No se encontraron pedidos</h3></div>';
                 return;
             }
@@ -145,6 +164,8 @@
             
             const orderDate = new Date(order.createdAt).toLocaleDateString('es-ES');
             const orderTime = new Date(order.createdAt).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+            const items = order.items || [];
+            const customerName = order.customer?.name || 'Cliente';
 
             div.innerHTML = `
                 <div class="order-header">
@@ -154,21 +175,27 @@
                 </div>
                 <div class="order-content">
                     <div class="order-info">
-                        <div><span class="info-label">Fecha</span><br><span class="info-value">${orderDate}</span></div>
-                        <div><span class="info-label">Hora</span><br><span class="info-value">${orderTime}</span></div>
-                        <div><span class="info-label">Pago</span><br><span class="info-value">${getPaymentMethodText(order.paymentMethod)}</span></div>
+                        <div><span class="info-label">Cliente</span><br><span class="info-value">${customerName}</span></div>
+                        <div><span class="info-label">Fecha</span><br><span class="info-value">${orderDate} ${orderTime}</span></div>
+                        <div><span class="info-label">Total</span><br><span class="info-value">$${(order.totalAmount || 0).toLocaleString()}</span></div>
                     </div>
                     ${order.notes ? `<div style="margin: 15px 0; padding: 10px; background: #f8f9fa; border-radius: 6px;"><strong>Notas:</strong> ${order.notes}</div>` : ''}
                     <div class="order-items">
-                        <h4>Productos (${order.items?.length || 0})</h4>
-                        ${(order.items || []).map(item => `
+                        <h4>Productos (${items.length})</h4>
+                        ${items.map(item => {
+                            const productName = item.product?.name || item.productSnapshot?.name || 'Producto';
+                            return `
                             <div class="order-item">
                                 <div>
-                                    <div style="font-weight: 500;">${item.product?.name || 'Producto'}</div>
-                                    <div style="font-size: 0.9rem; color: #666;">Cantidad: ${item.quantity}${item.specialInstructions ? ` • ${item.specialInstructions}` : ''}</div>
+                                    <div style="font-weight: 500;">${productName}</div>
+                                    <div style="font-size: 0.9rem; color: #666;">
+                                        Cantidad: ${item.quantity} • $${(item.unitPrice || 0).toLocaleString()}
+                                        ${item.specialInstructions ? ` • ${item.specialInstructions}` : ''}
+                                    </div>
                                 </div>
+                                <div style="font-weight: 600;">$${(item.subtotal || 0).toLocaleString()}</div>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                     <div class="order-actions">
                         ${getActionButtons(order)}
@@ -182,15 +209,12 @@
             const user = appUtils.getCurrentUser();
             const buttons = [];
             
-            // Botón ver detalles (para todos los usuarios)
             buttons.push(`<button class="btn btn-secondary btn-small" onclick="viewOrder('${order._id}')">Ver Detalle</button>`);
             
-            // Botón editar (para admin y waiter)
             if (['admin', 'waiter'].includes(user.role)) {
                 buttons.push(`<button class="btn btn-primary btn-small" onclick="editOrder('${order._id}')" style="background: #ffc107; color: #212529;">Editar</button>`);
             }
             
-            // Botón eliminar (solo para admin)
             if (user.role === 'admin') {
                 buttons.push(`<button class="btn btn-secondary btn-small" onclick="deleteOrder('${order._id}')" style="background: #dc3545;">Eliminar</button>`);
             }
@@ -217,12 +241,82 @@
             document.getElementById('tableFilter').addEventListener('change', () => loadOrders(1));
         }
 
+        async function viewOrder(orderId) {
+            try {
+                const response = await appUtils.getOrderById(orderId);
+                if (response.success && response.data) {
+                    showOrderModal(response.data);
+                }
+            } catch (error) {
+                showMessage('Error al cargar detalle: ' + error.message);
+            }
+        }
+
+        function showOrderModal(order) {
+            const modal = document.getElementById('orderModal');
+            const modalBody = document.getElementById('modalBody');
+            
+            document.getElementById('modalOrderNumber').textContent = 
+                order.orderNumber || '#' + order._id.slice(-6).toUpperCase();
+            
+            const items = order.items || [];
+            const orderDate = new Date(order.createdAt).toLocaleString('es-ES');
+            
+            modalBody.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <strong>Cliente:</strong> ${order.customer?.name || 'N/A'}<br>
+                    <strong>Email:</strong> ${order.customer?.email || 'N/A'}<br>
+                    <strong>Mesa:</strong> ${order.tableNumber}<br>
+                    <strong>Fecha:</strong> ${orderDate}<br>
+                    <strong>Estado:</strong> <span class="order-status status-${order.status}">${getStatusText(order.status)}</span><br>
+                    <strong>Pago:</strong> ${getPaymentMethodText(order.paymentMethod)}<br>
+                </div>
+                
+                ${order.notes ? `<div style="padding: 10px; background: #f8f9fa; border-radius: 6px; margin-bottom: 15px;"><strong>Notas:</strong> ${order.notes}</div>` : ''}
+                
+                <h4>Productos:</h4>
+                <div style="margin-bottom: 15px;">
+                    ${items.map(item => {
+                        const productName = item.product?.name || item.productSnapshot?.name || 'Producto';
+                        return `
+                        <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee;">
+                            <div>
+                                <div style="font-weight: 500;">${productName}</div>
+                                <div style="font-size: 0.9rem; color: #666;">
+                                    ${item.quantity} x $${(item.unitPrice || 0).toLocaleString()}
+                                    ${item.specialInstructions ? `<br><em>${item.specialInstructions}</em>` : ''}
+                                </div>
+                            </div>
+                            <div style="font-weight: 600;">$${(item.subtotal || 0).toLocaleString()}</div>
+                        </div>
+                    `}).join('')}
+                </div>
+                
+                <div style="text-align: right; padding-top: 15px; border-top: 2px solid #333;">
+                    <div style="margin-bottom: 5px;">Subtotal: $${(order.subtotal || 0).toLocaleString()}</div>
+                    <div style="margin-bottom: 5px;">IVA (19%): $${(order.tax || 0).toLocaleString()}</div>
+                    <div style="font-size: 1.2rem; font-weight: bold;">Total: $${(order.totalAmount || 0).toLocaleString()}</div>
+                </div>
+            `;
+            
+            modal.style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        // Cerrar modal al hacer click fuera
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
         function editOrder(orderId) {
             window.location.href = `/orders/edit/${orderId}`;
         }
 
-        async function updateStatus(orderId, newStatus) {
-            // Función eliminada - no se necesita para la funcionalidad básica
+        function newOrder() {
+            window.location.href = '/orders/new';
         }
 
         async function deleteOrder(orderId) {
@@ -263,7 +357,8 @@
             const methodTexts = {
                 cash: 'Efectivo',
                 card: 'Tarjeta',
-                transfer: 'Transferencia'
+                transfer: 'Transferencia',
+                pending: 'Pendiente'
             };
             return methodTexts[method] || method || 'No especificado';
         }
