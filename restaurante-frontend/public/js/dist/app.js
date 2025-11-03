@@ -32,7 +32,7 @@
     // ============================================================================
     // CONFIGURACIÓN Y ESTADO GLOBAL
     // ============================================================================
-    const API_URL = 'https://restaurante-backend-wid2.onrender.com';
+    const API_URL = 'https://restaurante-backend-wid2.onrender.com/api';
     let currentUser = null;
     let authToken = localStorage.getItem('authToken');
     function showAlert(elementId, message, type = 'error') {
