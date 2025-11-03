@@ -36,7 +36,7 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'"],
       connectSrc: [
         "'self'", 
-        "https://tallerelevita2-1.onrender.com", 
+        "https://restaurante-backend-wid2.onrender.com", 
         "http://localhost:3000"
       ],
       imgSrc: ["'self'", "data:", "https:"]
