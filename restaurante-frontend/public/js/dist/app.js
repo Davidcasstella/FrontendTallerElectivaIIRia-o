@@ -32,7 +32,7 @@
     // ============================================================================
     // CONFIGURACIÓN Y ESTADO GLOBAL
     // ============================================================================
-    const API_URL = 'https://tallerelevita2-1.onrender.com/api';
+    const API_URL = 'https://restaurante-backend-wid2.onrender.com';
     let currentUser = null;
     let authToken = localStorage.getItem('authToken');
     function showAlert(elementId, message, type = 'error') {
